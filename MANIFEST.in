@@ -1,0 +1,3 @@
+recursive-include adminfilters/static/adminfilters *
+recursive-include adminfilters/templates *.html
+recursive-include adminfilters/templatetags *

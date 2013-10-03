@@ -1,0 +1,61 @@
+{% extends "admin/base_site.html" %}
+{% load url from future %}
+{% load filtertags i18n admin_static admin_modify admin_urls %}
+
+
+{% block extrahead %}{{ block.super }}
+{% url 'admin:jsi18n' as jsi18nurl %}
+<script type="text/javascript" src="{{ jsi18nurl|default:"../../../jsi18n/" }}"></script>
+{{ media }}
+{% endblock %}
+
+{% block extrastyle %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="{% static "admin/css/forms.css" %}" />
+{% endblock %}
+
+{% block coltype %}colM{% endblock %}
+
+{% block bodyclass %}app-{{ opts.app_label }} model-{{ opts.object_name.lower }} change-form{% endblock %}
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+<a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+&rsaquo; <a href="{% url opts|admin_urlname:'changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a>
+&rsaquo; <a href="{% url opts|admin_urlname:'changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a>
+&rsaquo; {% trans 'Add Filter' %}
+</div>
+{% endblock %}
+
+{% block content %}<div id="content-main">
+<div>
+{% if save_on_top %}{% block submit_buttons_top %}{% submit_row %}{% endblock %}{% endif %}
+
+<h1>{% trans 'Add New Filter' %}</h2>
+	<form name="filters" method="post" action="">
+	{% csrf_token %}
+	<fieldset class="module aligned filters-fieldset">
+	<div class="left_filters_container">
+		{{form.non_field_errors}}
+		{{form.name.errors}}
+		<div class="filter-container">
+			<b>{{form.name.label}}</b>
+		</div>
+		<div class="filter-container">
+			{{form.name}}
+		</div>
+		<br clear="both">
+		<br>
+		{% include 'custom_filter_form.html' %}
+	</div>
+	<div class="right_filters_container">
+		{{form|get_label:add_param}}
+		{{form|get_field:add_param}}<br>
+		{{form.ordering.label}}
+		{{form.ordering}}
+	</div>
+	</fieldset>
+
+<br clear="both">
+{% block submit_buttons_bottom %}{% submit_row %}{% endblock %}
+</div>
+{% endblock %}

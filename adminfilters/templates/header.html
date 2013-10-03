@@ -1,0 +1,40 @@
+{% load url from future %}
+{% load i18n filtertags %}
+<script type="text/javascript">
+	var custom_filter_id = '{{current_filter.id}}';
+	var cookie_name = custom_filter_id + '_cfilter';
+	var filter_name = '{{current_filter.verbose_name}}';
+	(function($) {
+    	$(document).ready(function($) {
+        	load_header_visibility();
+        	$('.deletefilter').click(function(){
+        		delete_filter(filter_name);
+        	});
+    	});
+	})(django.jQuery);
+</script>
+<div id="custom_filters">
+	<h2>{% trans 'Filters' %} ({{current_filter.verbose_name}}) <a href="javascript:void(null);" id="header_toggle">{% trans 'hide' %}</a></h2>
+	<div id="custom_filters_header">
+		<div class="left_filters_container">
+			<form name="filters" method="get" action="{{opts|save_filter_url}}">
+			{% include 'custom_filter_form.html' %}
+		</div>
+		<div class="right_filters_container">
+			{{form|get_label:add_param}}
+			{{form|get_field:add_param}}<br>
+			{{form.ordering.label}}
+			{{form.ordering}}<br>
+			{{form|get_field:load_param}}
+			{{form|get_label:load_param}}
+		</div>
+		<br clear="both"><br>
+		<input type="hidden" name="{{save_param}}" value="" class="save_adminfilters">
+		<input type="button" name="save_button" value="{% trans 'Apply Filter' %}">
+		<input type="button" name="add_button" value="{% trans 'Add New Filter' %}">
+		<p class="deletelink-box inline-container">
+			<a href="{{opts|delete_filter_url:current_filter.pk}}" class="deletelink deletefilter">{% trans 'Delete' %}</a>
+		</p>
+		</form>
+	</div>
+</div>

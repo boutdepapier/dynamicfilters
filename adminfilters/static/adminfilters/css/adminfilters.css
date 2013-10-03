@@ -1,0 +1,33 @@
+.inline-label {
+	display: inline-block !important;
+	float: none !important;
+}
+p.datetime {
+	margin: 0px !important;
+	padding: 0px !important;	
+}
+.inline-container {
+	display: inline-block !important;
+}
+.left_filters_container, .fcontainer {
+	float:left;
+}
+.right_filters_container {
+	float:right;
+	text-align:right;
+}
+#custom_filters_header {
+	padding:10px; 
+}
+.filter-container, .lcontainer {
+	float:left;
+	width:200px;
+}
+.filters-fieldset {
+	padding: 8px 12px;
+}
+.dcontainer {
+	float:left;
+	width:400px;
+	display:none;
+}

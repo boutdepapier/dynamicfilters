@@ -1,0 +1,35 @@
+{% load filtertags %}
+{% for row in form.field_rows %}
+	{% for filter_field in row %}
+		{% if forloop.first %}
+		<div class="lcontainer">
+			{{form|get_field:filter_field}}
+			<label for="id_{{filter_field}}" class="inline-label">{{form|get_label:filter_field}}</label>
+		</div>
+		{% else %}
+			{% if forloop.counter == 2 %}
+				<div class="fcontainer" id="{{filter_field}}_container">
+			{% endif %}
+			{% if forloop.counter <= 3 %}
+				<div class="lcontainer" {% if forloop.counter == 3 %}id="{{filter_field}}_container"{% endif %}>
+					{% if forloop.counter == 3 %}{{form|get_field_errors:filter_field}}{% endif %}
+					{{form|get_field:filter_field}}
+				</div>
+			{% endif %}
+			{% if forloop.counter == 4 %}
+				<div id="{{filter_field|get_container_name}}_dcontainer" class="dcontainer">
+			{% endif %}
+			{% if forloop.counter >= 4 %}
+				{{form|get_field:filter_field}}
+			{% endif %}
+			{% if forloop.counter > 4 and forloop.revcounter == 1 %}
+				</div>
+			{% endif %}
+			{% if forloop.last %}
+				</div>
+			{% endif %}
+		{% endif %}	
+	{% endfor %}
+	<br clear="both">
+{% endfor %}
+<br clear="both">
