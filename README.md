@@ -33,11 +33,11 @@ class CategoryAdmin(CustomFiltersAdmin):
 
 ## Configuration
 
-ADMINFILTERS_ADD_PARAM - parameter for adding new field to existing filters set.
-ADMINFILTERS_LOAD_PARAM - parameter for loading existing filters set.
-ADMINFILTERS_HEADER_TAG - HTML tag where rendered filters will be appeneded.
-ADMINFILTERS_SAVE_PARAM - parameter to indicate save action of filters set for controller.
-ADMINFILTERS_URLCONF - name of admin application's URLconf.
+`ADMINFILTERS_ADD_PARAM` — parameter for adding new field to existing filters set.
+`ADMINFILTERS_LOAD_PARAM` — parameter for loading existing filters set.
+`ADMINFILTERS_HEADER_TAG` — HTML tag where rendered filters will be appeneded.
+`ADMINFILTERS_SAVE_PARAM` — parameter to indicate save action of filters set for controller.
+`ADMINFILTERS_URLCONF` — name of admin application's URLconf.
 
-ADMINFILTERS_ADD_PARAM, ADMINFILTERS_LOAD_PARAM, ADMINFILTERS_SAVE_PARAM - are basically fields, that indicate action for filters set management.
+`ADMINFILTERS_ADD_PARAM`, `ADMINFILTERS_LOAD_PARAM`, `ADMINFILTERS_SAVE_PARAM` are basically fields, that indicate action for filters set management.
 They can be configured to avoid collissions with existing form fields or parameters.
