@@ -88,7 +88,7 @@ class CustomFiltersAdmin(admin.ModelAdmin):
         
         # creating temporary filter set, it's available to attach field until it's saved
         current_filter, created = CustomFilter.objects.get_or_create(user=request.user, app_name=self.opts.app_label, 
-                                                                     model_name=self.opts.module_name.capitalize(), 
+                                                                     model_name=self.model.__name__, 
                                                                      default=False, name='temporary')
         form = AddCustomFilterForm(custom_filter=current_filter)
         if request.method == 'POST':
