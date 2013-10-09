@@ -14,7 +14,8 @@ def get_field(value, arg):
 
 @register.filter
 def get_label(value, arg):
-    return value.fields.get(arg, None).label
+    field = value.fields.get(arg, None)
+    return field.label if field else ''
 
 @register.filter
 def get_field_errors(value, arg):
