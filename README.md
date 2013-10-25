@@ -31,6 +31,8 @@ class CategoryAdmin(CustomFiltersAdmin):
     list_fields = ('name',)
 ```
 
+To disable adminfilters for current model admin, revert class inheritance back to admin.ModelAdmin.
+
 ## Configuration
 
 `ADMINFILTERS_ADD_PARAM` — parameter for adding new field to existing filters set.
