@@ -62,7 +62,9 @@ class CustomFiltersAdmin(admin.ModelAdmin):
         # once custom filter set has been created, adding fields from list_filter setting to current filter set
         if created:
             for field in self.list_filter:
-                CustomQuery.objects.get_or_create(custom_filter=new_filter, field=field)
+                # TODO fix filtering by custom filters
+                if isinstance(field, (str, unicode)):
+                    CustomQuery.objects.get_or_create(custom_filter=new_filter, field=field)
             else:
                 # if there're no pre-defined fields, adding first available field so filter set won't be empty
                 CustomQuery.objects.create(custom_filter=new_filter, field=new_filter.choices[0][0])
