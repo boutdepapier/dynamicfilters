@@ -50,6 +50,14 @@ BOOLEAN_FIELD_CHOICES = (
      ('false', _(u'False'))
 )
 
+def import_module(app_name):
+    django_apps = ('auth',)
+    if app_name in django_apps:
+        module = __import__('django.contrib.%s.models' % app_name, fromlist=['models'])
+    else:
+        module = __import__('%s.models' % app_name, fromlist=['models'])
+    return module
+
 class CustomFilter(models.Model):
     """Model which stores filter set. """
     
@@ -64,8 +72,7 @@ class CustomFilter(models.Model):
     @property
     def model(self):
         """Dynamically importing application model."""
-        
-        module = __import__('%s.models' % self.app_name, fromlist=['models'])
+        module = import_module(self.app_name)
         model = getattr(module, self.model_name, None)
         return model
 
@@ -194,8 +201,7 @@ class CustomQuery(models.Model):
     @property
     def model(self):
         """Dynamically importing application model."""
-        
-        module = __import__('%s.models' % self.custom_filter.app_name, fromlist=['models'])
+        module = import_module(self.custom_filter.app_name)
         model = getattr(module, self.custom_filter.model_name, None)
         return model
     
