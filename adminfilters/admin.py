@@ -74,7 +74,7 @@ class CustomFiltersAdmin(admin.ModelAdmin):
         
         # overridding default ordering
         if new_filter.ordering:
-            self.ordering = (new_filter.ordering,)
+            self.ordering = new_filter.filter_ordering
         return super(CustomFiltersAdmin, self).changelist_view(request, *args, **kwargs)
 
     def lookup_allowed(self, *args, **kwargs):

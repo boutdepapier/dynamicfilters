@@ -1,3 +1,4 @@
+import datetime
 import simplejson
 
 from django.contrib.auth.models import User
@@ -69,6 +70,19 @@ class CustomFilter(models.Model):
     default = models.BooleanField(default=False)
     ordering = models.CharField(max_length=255)
 
+    def get_ordering(self):
+        if self.ordering:
+            try:
+                return simplejson.loads(self.ordering)
+            except:
+                pass
+        return self.ordering
+    
+    def set_ordering(self, value):
+        self.ordering = simplejson.dumps(value)
+    
+    filter_ordering = property(get_ordering, set_ordering)
+
     @property
     def model(self):
         """Dynamically importing application model."""
@@ -130,7 +144,7 @@ class CustomFilter(models.Model):
                 elif len(query.field_value) > 1 or query.criteria == 'days_ago':
                     key += '__in'
                 
-                # preparing date-related criterias
+                # preparing date-related criteria
                 if query.criteria in ['today', 'this_week', 'this_month', 'this_year', 'days_ago']:
                     date = datetime.datetime.now()
                     if query.criteria == 'today':

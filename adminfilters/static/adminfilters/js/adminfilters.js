@@ -83,6 +83,7 @@
 	       		}
 	       	});
     	});
+    	$('.single_ordering').after('<a href="javascript:expand_ordering_choices();" id="ordering_toggle">expand</a>');
 	})(django.jQuery);
 	function expand_choices(field_name) {
 		$('select[name='+field_name+'_value]').attr('multiple', 'multiple');
@@ -113,4 +114,12 @@
 			location.href = $('.deletefilter').attr('href');
 		}
 		return false;
+	}
+	function expand_ordering_choices() {
+		$('select[name=ordering]').attr('multiple', 'multiple');
+		$('#ordering_toggle').html('<a href="javascript:reduce_ordering_choices()">reduce</a>');
+	}
+	function reduce_ordering_choices() {
+		$('select[name=ordering]').removeAttr('multiple');
+		$('#ordering_toggle').html('<a href="javascript:expand_ordering_choices()">expand</a>');
 	}

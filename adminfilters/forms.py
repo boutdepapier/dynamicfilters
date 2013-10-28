@@ -11,8 +11,6 @@ ADMINFILTERS_SAVE_PARAM = getattr(settings, 'ADMINFILTERS_SAVE_PARAM', 'save_adm
 class CustomFilterForm(forms.Form):
     """Form for managing filter set."""
     
-    ordering = forms.ChoiceField(label=_(u'Order by:'), required=False)
-    
     def __init__(self, *args, **kwargs):
         """Preparing form - it consists of dynamic fields, except ordering."""
         
@@ -21,8 +19,17 @@ class CustomFilterForm(forms.Form):
         super(CustomFilterForm, self).__init__(*args, **kwargs)
         self.skip_validation = True
         self.params = args[0] if args else QueryDict('')
-        self.fields['ordering'].choices = [('', '')] + self.custom_filter.ordering_choices
-        self.fields['ordering'].initial = self.custom_filter.ordering
+        
+        if isinstance(self.custom_filter.filter_ordering, list):
+            ordering_choices = self.custom_filter.ordering_choices
+            ordering_field = forms.MultipleChoiceField()
+        else:
+            widget = forms.Select(attrs={'class':'single_ordering'})
+            ordering_choices = [('', '')] + self.custom_filter.ordering_choices
+            ordering_field = forms.ChoiceField(widget=widget)
+        self.fields['ordering'] = ordering_field
+        self.fields['ordering'].choices = ordering_choices
+        self.fields['ordering'].initial = self.custom_filter.filter_ordering
         
         if self.custom_filter.choices:
             self.fields[ADMINFILTERS_ADD_PARAM] = forms.ChoiceField(label=_(u'Add field to filter:'), 
@@ -96,7 +103,7 @@ class CustomFilterForm(forms.Form):
 
     def save(self, *args, **kwargs):
         params = self.data
-        self.custom_filter.ordering = params.get('ordering', None)
+        self.custom_filter.filter_ordering = params.getlist('ordering', None)
         for query in self.custom_filter.queries.all():
             if params.get('%s_enabled' % query.field, None):
                 criteria = params.get('%s_criteria' % query.field, 'exact')
