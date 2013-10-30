@@ -73,7 +73,7 @@ class CustomFiltersAdmin(admin.ModelAdmin):
         self.list_filter = []
         
         # overridding default ordering
-        if new_filter.ordering:
+        if new_filter.filter_ordering:
             self.ordering = new_filter.filter_ordering
         return super(CustomFiltersAdmin, self).changelist_view(request, *args, **kwargs)
 
