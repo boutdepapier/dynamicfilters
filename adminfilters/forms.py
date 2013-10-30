@@ -103,7 +103,11 @@ class CustomFilterForm(forms.Form):
 
     def save(self, *args, **kwargs):
         params = self.data
-        self.custom_filter.filter_ordering = params.getlist('ordering', None)
+        filter_ordering = params.getlist('ordering', None)
+        # removing empty 
+        if '' in filter_ordering:
+            filter_ordering.remove('')
+        self.custom_filter.filter_ordering = filter_ordering
         for query in self.custom_filter.queries.all():
             if params.get('%s_enabled' % query.field, None):
                 criteria = params.get('%s_criteria' % query.field, 'exact')
