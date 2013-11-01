@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.contrib import messages
 from django.core.urlresolvers import reverse
 from django.template.loader import render_to_string
 from models import CustomFilter
@@ -36,4 +37,6 @@ class CustomFiltersMiddleware(object):
                                                                'save_param': ADMINFILTERS_SAVE_PARAM})
                     response.content = response.content.replace(ADMINFILTERS_HEADER_TAG, 
                                                                 ADMINFILTERS_HEADER_TAG + content.encode('utf-8'))
+                    if current_filter[0].errors:
+                        messages.warning(request, current_filter[0].errors)
         return response

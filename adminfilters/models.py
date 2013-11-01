@@ -97,6 +97,10 @@ class CustomFilter(models.Model):
         return self.model._meta.fields + self.model._meta.local_many_to_many
     
     @property
+    def all_fields_names(self):
+        return [f.name for f in self.all_fields]
+    
+    @property
     def choices(self):
         """List of fields, available for attaching to filter set. Already attached fields and primary key are excluded."""
         
@@ -135,37 +139,43 @@ class CustomFilter(models.Model):
         filter_params = {}
         exclude_params = {}
         for query in self.queries.all():
-            key = query.field
-            if query.criteria:  # avoiding load of empty criteria
-                if query.criteria.startswith('_not'):
-                    key += '__%s' % query.criteria[4:]
-                elif query.criteria not in ['today', 'this_week', 'this_month', 'this_year', 'between', 'days_ago']:
-                    key += '__%s' % query.criteria
-                elif len(query.field_value) > 1 or query.criteria == 'days_ago':
-                    key += '__in'
-                
-                # preparing date-related criteria
-                if query.criteria in ['today', 'this_week', 'this_month', 'this_year', 'days_ago']:
-                    date = datetime.datetime.now()
-                    if query.criteria == 'today':
-                        value = date.strftime('%Y-%m-%d')
-                    if query.criteria == 'this_month':
-                        key += '__month'
-                        value = date.strftime('%m')
-                    if query.criteria == 'this_year':
-                        key += '__year'
-                        value = date.strftime('%Y')
-                        filter_params[key] = value
-                    if query.criteria == 'days_ago':
-                        filter_params[key] = datetime.date.today() + datetime.timedelta(days=int(query.field_value))
-                elif query.criteria == 'between':
-                    filter_params['%s__gt' % key] = query.field_value[0]
-                    filter_params['%s__lte' % key] = query.field_value[1]
-                elif query.criteria.startswith('_not'):
-                    exclude_params[key] = query.field_value
-                elif query.field_value:     # avoiding load of empty filter value which causes database error
-                    filter_params[key] = query.field_value
+            if query.model_field:
+                key = query.field
+                if query.criteria:  # avoiding load of empty criteria
+                    if query.criteria.startswith('_not'):
+                        key += '__%s' % query.criteria[4:]
+                    elif query.criteria not in ['today', 'this_week', 'this_month', 'this_year', 'between', 'days_ago']:
+                        key += '__%s' % query.criteria
+                    elif len(query.field_value) > 1 or query.criteria == 'days_ago':
+                        key += '__in'
+                    
+                    # preparing date-related criteria
+                    if query.criteria in ['today', 'this_week', 'this_month', 'this_year', 'days_ago']:
+                        date = datetime.datetime.now()
+                        if query.criteria == 'today':
+                            value = date.strftime('%Y-%m-%d')
+                        if query.criteria == 'this_month':
+                            key += '__month'
+                            value = date.strftime('%m')
+                        if query.criteria == 'this_year':
+                            key += '__year'
+                            value = date.strftime('%Y')
+                            filter_params[key] = value
+                        if query.criteria == 'days_ago':
+                            filter_params[key] = datetime.date.today() + datetime.timedelta(days=int(query.field_value))
+                    elif query.criteria == 'between':
+                        filter_params['%s__gt' % key] = query.field_value[0]
+                        filter_params['%s__lte' % key] = query.field_value[1]
+                    elif query.criteria.startswith('_not'):
+                        exclude_params[key] = query.field_value
+                    elif query.field_value:     # avoiding load of empty filter value which causes database error
+                        filter_params[key] = query.field_value
         return filter_params, exclude_params
+
+    @property
+    def errors(self):
+        skipped_fields = ['"%s"' % f for f in self.columns if f not in self.all_fields_names]
+        return _(u'Fields: %s were skipped in current filterset. They might be renamed or deleted from original model.' % ','.join(skipped_fields))
 
 class CustomQuery(models.Model):
     """Model which stores fields and settings for every filter set."""
@@ -221,8 +231,9 @@ class CustomQuery(models.Model):
     
     @property
     def model_field(self):
-        model_field = self.model._meta.get_field_by_name(self.field)[0]
-        return model_field
+        if self.field in self.custom_filter.all_fields_names:
+            return self.model._meta.get_field_by_name(self.field)[0]
+        return
     
     @property
     def field_verbose_name(self):

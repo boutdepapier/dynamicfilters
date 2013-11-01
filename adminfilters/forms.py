@@ -44,67 +44,67 @@ class CustomFilterForm(forms.Form):
         
         self.field_rows = []
         for query in self.custom_filter.queries.all():
-            row = ['%s_enabled' % query.field,
-                   '%s_criteria' % query.field]
-            self.fields['%s_enabled' % query.field] = forms.BooleanField(label=query.field_verbose_name,
-                                                                        initial=True,
-                                                                        required=False,
-                                                                        widget=forms.CheckboxInput(attrs={'class':'enable'}))
-            if query.criterias:
-                self.fields['%s_criteria' % query.field] = forms.ChoiceField(choices=query.criterias,
-                                                                         initial=query.criteria,
-                                                                         required=False,
-                                                                         widget=forms.Select(attrs={'class':'criteria'}))
-            if query.choices:
-                attrs = {'class':'value'}
-                if query.is_multiple or len(self.params.getlist('%s_value' % query.field, None)) > 1:
-                    widget = forms.SelectMultiple(attrs=attrs)
-                    value_field = forms.MultipleChoiceField(choices=query.choices,
-                                                initial=query.value,
-                                                widget=widget)
+            if query.model_field:
+                row = ['%s_enabled' % query.field,
+                       '%s_criteria' % query.field]
+                self.fields['%s_enabled' % query.field] = forms.BooleanField(label=query.field_verbose_name,
+                                                                            initial=True,
+                                                                            required=False,
+                                                                            widget=forms.CheckboxInput(attrs={'class':'enable'}))
+                if query.criterias:
+                    self.fields['%s_criteria' % query.field] = forms.ChoiceField(choices=query.criterias,
+                                                                             initial=query.criteria,
+                                                                             required=False,
+                                                                             widget=forms.Select(attrs={'class':'criteria'}))
+                if query.choices:
+                    attrs = {'class':'value'}
+                    if query.is_multiple or len(self.params.getlist('%s_value' % query.field, None)) > 1:
+                        widget = forms.SelectMultiple(attrs=attrs)
+                        value_field = forms.MultipleChoiceField(choices=query.choices,
+                                                    initial=query.value,
+                                                    widget=widget)
+                    else:
+                        widget = forms.Select(attrs=attrs)
+                        value_field = forms.ChoiceField(choices=query.choices,
+                                                    initial=query.value,
+                                                    widget=widget)
+                        
+                elif query.field_type in ['date', 'datetime']:
+                    if query.field_type == 'date':
+                        value_field = forms.DateField(initial=query.value, widget=widgets.AdminDateWidget())
+                    elif query.field_type == 'datetime':
+                        value_field = forms.DateTimeField(initial=query.value, widget=widgets.AdminSplitDateTime())
+                    dwidget = forms.TextInput(attrs={'style': 'display: %s' % ('block' if query.criteria == 'days_ago' else 'none'),
+                                                     'size': 5})
+                    dfield = forms.CharField(initial=query.value, 
+                                             widget=dwidget,
+                                             required=False)
                 else:
-                    widget = forms.Select(attrs=attrs)
-                    value_field = forms.ChoiceField(choices=query.choices,
-                                                initial=query.value,
-                                                widget=widget)
-                    
-            elif query.field_type in ['date', 'datetime']:
-                if query.field_type == 'date':
-                    value_field = forms.DateField(initial=query.value, widget=widgets.AdminDateWidget())
-                elif query.field_type == 'datetime':
-                    value_field = forms.DateTimeField(initial=query.value, widget=widgets.AdminSplitDateTime())
-                dwidget = forms.TextInput(attrs={'style': 'display: %s' % ('block' if query.criteria == 'days_ago' else 'none'),
-                                                 'size': 5})
-                dfield = forms.CharField(initial=query.value, 
-                                         widget=dwidget,
-                                         required=False)
-            else:
-                value_field = forms.CharField(initial=query.value, widget=forms.TextInput(attrs={'size':10}))
+                    value_field = forms.CharField(initial=query.value, widget=forms.TextInput(attrs={'size':10}))
 
-            if value_field:
-                self.fields['%s_value' % query.field] = value_field
-                row.append('%s_value' % query.field)
-            
-            if query.field_type in ['date', 'datetime', 'integer']:
-                row.append('%s_start' % query.field)
-                row.append('%s_end' % query.field)
-                self.fields['%s_start' % query.field] = value_field
-                self.fields['%s_end' % query.field] = value_field
-                if query.field_type in ['date', 'datetime']:
-                    row.append('%s_dago' % query.field)
-                    self.fields['%s_dago' % query.field] = dfield
-                if query.criteria == 'between':
-                    bvalue = getattr(query, 'field_value', ['',''])
-                    self.initial['%s_start' % query.field] = bvalue[0]
-                    self.initial['%s_end' % query.field] = bvalue[1]
-                    self.initial['%s_dago' % query.field] = ''
-                    self.initial['%s_value' % query.field] = ''
-            self.field_rows.append(row)
+                if value_field:
+                    self.fields['%s_value' % query.field] = value_field
+                    row.append('%s_value' % query.field)
+                
+                if query.field_type in ['date', 'datetime', 'integer']:
+                    row.append('%s_start' % query.field)
+                    row.append('%s_end' % query.field)
+                    self.fields['%s_start' % query.field] = value_field
+                    self.fields['%s_end' % query.field] = value_field
+                    if query.field_type in ['date', 'datetime']:
+                        row.append('%s_dago' % query.field)
+                        self.fields['%s_dago' % query.field] = dfield
+                    if query.criteria == 'between':
+                        bvalue = getattr(query, 'field_value', ['',''])
+                        self.initial['%s_start' % query.field] = bvalue[0]
+                        self.initial['%s_end' % query.field] = bvalue[1]
+                        self.initial['%s_dago' % query.field] = ''
+                        self.initial['%s_value' % query.field] = ''
+                self.field_rows.append(row)
 
     def save(self, *args, **kwargs):
         params = self.data
         filter_ordering = params.getlist('ordering', None)
-        # removing empty 
         if '' in filter_ordering:
             filter_ordering.remove('')
         self.custom_filter.filter_ordering = filter_ordering
