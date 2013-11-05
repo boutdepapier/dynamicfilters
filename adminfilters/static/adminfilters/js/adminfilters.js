@@ -6,7 +6,7 @@
         else {
             var form = $('form');
         }
-        $('.add_adminfilters').change()(function () {
+        $('.add_adminfilters').change(function () {
             form.submit();
         });
         $('.load_adminfilters').click(function () {
