@@ -102,7 +102,7 @@ class CustomFilter(models.Model):
     
     @property
     def all_fields_names(self):
-        return [f.name for f in self.all_fields]
+        return self.model._meta.get_all_field_names()
     
     @property
     def choices(self):
@@ -181,9 +181,16 @@ class CustomFilter(models.Model):
 
     @property
     def errors(self):
-        skipped_fields = ['"%s"' % f for f in self.columns if f not in self.all_fields_names]
+        skipped_fields = [f for f in self.columns if f not in self.all_fields_names]
+        for f in skipped_fields:
+            if '__' in f:
+                child_model_name, child_field_name = f.split('__')
+                child_model = getattr(self.model, child_model_name)
+                if child_model and child_field_name in child_model.related.opts.get_all_field_names():
+                    skipped_fields.remove(f)
         if skipped_fields:
-            return _(u'Fields: %s were skipped in current filterset. They might be renamed or deleted from original model.' % ','.join(skipped_fields))
+            skipped_field_names = ['"%s"' % f for f in skipped_fields]
+            return _(u'Fields: %s were skipped in current filterset. They might be renamed or deleted from original model.' % ','.join(skipped_field_names))
         return
 
 class CustomQuery(models.Model):
@@ -239,8 +246,20 @@ class CustomQuery(models.Model):
         return model
     
     @property
+    def child_model(self):
+        model_name = self.field.split('__')[0]
+        related_instance = getattr(self.model, model_name)
+        if related_instance:
+            return related_instance.related.model
+        return
+    
+    @property
     def model_field(self):
-        if self.field in self.custom_filter.all_fields_names:
+        if '__' in self.field:
+            field_name = self.field.split('__')[1]
+            
+            return self.child_model._meta.get_field_by_name(field_name)[0]
+        elif self.field in self.custom_filter.all_fields_names:
             return self.model._meta.get_field_by_name(self.field)[0]
         return
     

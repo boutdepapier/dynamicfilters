@@ -73,7 +73,6 @@ class CustomFiltersAdmin(admin.ModelAdmin):
         if created:
             for field in self.list_filter:
                 # since custom list_filters are not supported for now, limiting filterset criteria to fields only
-                print field
                 if isinstance(field, (str, unicode)):
                     CustomQuery.objects.get_or_create(custom_filter=new_filter, field=field)
                 else:
