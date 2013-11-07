@@ -16,6 +16,8 @@ class CustomFilterForm(forms.Form):
         
         self.custom_filter = kwargs.pop('custom_filter', None)
         self.custom_filters = kwargs.pop('custom_filters', None)
+        self.request = kwargs.pop('request', None)
+        self.model_admin = kwargs.pop('model_admin', None)
         super(CustomFilterForm, self).__init__(*args, **kwargs)
         self.skip_validation = True
         self.params = args[0] if args else QueryDict('')
@@ -43,6 +45,24 @@ class CustomFilterForm(forms.Form):
             self.fields[ADMINFILTERS_LOAD_PARAM].choices = [('', '')] + [(cf.id, cf.verbose_name) for cf in self.custom_filters]
         
         self.field_rows = []
+        
+        for query in self.custom_filter.bundled_queries.all():
+            query_instance = query.query_instance(None, {}, self.custom_filter.model, None)
+            if query_instance:
+                row = ['%s_enabled' % query_instance.parameter_name,
+                       '%s_criteria' % query_instance.parameter_name]
+                self.fields['%s_enabled' % query_instance.parameter_name] = forms.BooleanField(label=query_instance.title.title(),
+                                                                            initial=True,
+                                                                            required=False,
+                                                                            widget=forms.CheckboxInput(attrs={'class':'enable'}))
+                
+                query_criterias = [(p, t) for (p, t) in query_instance.lookups(None, self.custom_filter.model)]
+                self.fields['%s_criteria' % query_instance.parameter_name] = forms.ChoiceField(choices=query_criterias,
+                                                                             initial=query.value,
+                                                                             required=False,
+                                                                             widget=forms.Select(attrs={'class':'criteria'}))
+                self.field_rows.append(row)
+                
         for query in self.custom_filter.queries.all():
             if query.model_field:
                 row = ['%s_enabled' % query.field,
@@ -108,6 +128,15 @@ class CustomFilterForm(forms.Form):
         if '' in filter_ordering:
             filter_ordering.remove('')
         self.custom_filter.filter_ordering = filter_ordering
+        for query in self.custom_filter.bundled_queries.all():
+            query_instance = query.query_instance(None, {}, self.custom_filter.model, None)
+            if params.get('%s_enabled' % query_instance.parameter_name, None):
+                criteria = params.get('%s_criteria' % query_instance.parameter_name, None)
+                query.field = query_instance.parameter_name
+                query.value = criteria
+                query.save()
+            else:
+                query.delete()
         for query in self.custom_filter.queries.all():
             if params.get('%s_enabled' % query.field, None):
                 criteria = params.get('%s_criteria' % query.field, 'exact')

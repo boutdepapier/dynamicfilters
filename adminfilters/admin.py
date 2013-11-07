@@ -9,7 +9,7 @@ from django.core import urlresolvers
 from django.shortcuts import get_object_or_404, render_to_response, redirect
 from django.template import RequestContext
 
-from models import CustomFilter, CustomQuery
+from models import CustomFilter, CustomQuery, CustomBundledQuery
 from forms import CustomFilterForm, AddCustomFilterForm
 
 ADMINFILTERS_ADD_PARAM = getattr(settings, 'ADMINFILTERS_ADD_PARAM', 'add_adminfilters')
@@ -20,11 +20,11 @@ class CustomChangeList(ChangeList):
     """Customized class for extending filters loading."""
     
     def get_filters(self, request):
-        current_filter = CustomFilter.objects.filter(user=request.user, path_info=request.path_info, default=True)
+        self.current_filter = CustomFilter.objects.filter(user=request.user, path_info=request.path_info, default=True)
         
         # loading filter set params into change list, so they will be applied in queryset
-        if current_filter:
-            filter_params, self.exclude_params = current_filter[0].get_filter_params()
+        if self.current_filter:
+            filter_params, self.exclude_params, self.bundled_params = self.current_filter[0].get_filter_params()
             self.params.update(**filter_params)
         f = super(CustomChangeList, self).get_filters(request)
         return f
@@ -32,7 +32,16 @@ class CustomChangeList(ChangeList):
     def get_query_set(self, request):
         qs = super(CustomChangeList, self).get_query_set(request)
         try:
-            return qs.exclude(**self.exclude_params)
+            qs = qs.exclude(**self.exclude_params)
+        except:
+            pass
+        try:
+            for query in self.current_filter[0].bundled_queries.all():
+                query_instance = query.query_instance(request, self.bundled_params, 
+                                                      self.current_filter.model, self.model_admin)
+                updated_qs = query_instance.queryset(request, qs)
+                if updated_qs: 
+                    qs = updated_qs
         except:
             pass
         return qs
@@ -59,16 +68,21 @@ class CustomFiltersAdmin(admin.ModelAdmin):
                                                  model_name=self.model.__name__, app_name=self.model._meta.app_label,
                                                  default=True)
         
+        
         # once custom filter set has been created, adding fields from list_filter setting to current filter set
         if created:
             for field in self.list_filter:
                 # since custom list_filters are not supported for now, limiting filterset criteria to fields only
+                print field
                 if isinstance(field, (str, unicode)):
                     CustomQuery.objects.get_or_create(custom_filter=new_filter, field=field)
+                else:
+                    CustomBundledQuery.objects.get_or_create(custom_filter=new_filter, module_name=field.__module__,
+                                                             class_name=field.__name__)
             else:
                 # if there're no pre-defined fields, adding first available field so filter set won't be empty
                 CustomQuery.objects.create(custom_filter=new_filter, field=new_filter.choices[0][0])
-        
+ 
         # disabling right sidebar with filters by setting empty list_filter setting
         self.list_filter = []
         

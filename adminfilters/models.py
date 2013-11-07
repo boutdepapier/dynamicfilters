@@ -2,6 +2,8 @@ import datetime
 import simplejson
 
 from django.contrib.auth.models import User
+from django.conf import settings
+from django.core.urlresolvers import reverse
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
@@ -50,6 +52,8 @@ BOOLEAN_FIELD_CHOICES = (
      ('true', _(u'true')), 
      ('false', _(u'False'))
 )
+
+ADMINFILTERS_URLCONF = getattr(settings, 'ADMINFILTERS_URLCONF', None)
 
 def import_module(app_name):
     django_apps = ('auth',)
@@ -138,6 +142,7 @@ class CustomFilter(models.Model):
         
         filter_params = {}
         exclude_params = {}
+        bundled_params = {}
         for query in self.queries.all():
             if query.model_field:
                 key = query.field
@@ -170,12 +175,16 @@ class CustomFilter(models.Model):
                         exclude_params[key] = query.field_value
                     elif query.field_value:     # avoiding load of empty filter value which causes database error
                         filter_params[key] = query.field_value
-        return filter_params, exclude_params
+        for query in self.bundled_queries.all():
+            bundled_params[query.field] = query.value
+        return filter_params, exclude_params, bundled_params
 
     @property
     def errors(self):
         skipped_fields = ['"%s"' % f for f in self.columns if f not in self.all_fields_names]
-        return _(u'Fields: %s were skipped in current filterset. They might be renamed or deleted from original model.' % ','.join(skipped_fields))
+        if skipped_fields:
+            return _(u'Fields: %s were skipped in current filterset. They might be renamed or deleted from original model.' % ','.join(skipped_fields))
+        return
 
 class CustomQuery(models.Model):
     """Model which stores fields and settings for every filter set."""
@@ -272,6 +281,20 @@ class CustomQuery(models.Model):
                 return 'datetime'
             if isinstance(self.model_field, models.DateField):
                 return 'date'
+        return
+
+class CustomBundledQuery(models.Model):
+    custom_filter = models.ForeignKey(CustomFilter, related_name='bundled_queries')
+    module_name = models.CharField(max_length=255, null=True, blank=True)
+    class_name = models.CharField(max_length=255, null=True, blank=True)
+    field = models.CharField(max_length=255)
+    value = models.CharField(max_length=255, null=True, blank=True)
+
+    @property
+    def query_instance(self):
+        module = __import__(self.module_name, fromlist=[self.module_name])
+        if module:
+            return getattr(module, self.class_name, None)
         return
 
 @receiver(post_save, sender=CustomFilter)
