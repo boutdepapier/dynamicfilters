@@ -111,7 +111,7 @@ class CustomFiltersAdmin(admin.ModelAdmin):
             new_query = form.data.get(ADMINFILTERS_ADD_PARAM, None)
             if new_query:
                 CustomQuery.objects.get_or_create(custom_filter=current_filter, field=new_query)
-                form = AddCustomFilterForm(request.POST, custom_filter=current_filter)
+                form = AddCustomFilterForm(request.POST.copy(), custom_filter=current_filter, new_query=new_query)
             elif form.is_valid():
                 form.save()
                 if not '_addanother' in request.POST:
@@ -119,6 +119,7 @@ class CustomFiltersAdmin(admin.ModelAdmin):
                 
                 # clearing form if user wants to add one more filter set
                 form = AddCustomFilterForm(custom_filter=current_filter)
+
         context = {'presets': CustomFilter.get_filters(user=request.user,
                                                        path_info=request.path_info),
                    'current_filter': current_filter,

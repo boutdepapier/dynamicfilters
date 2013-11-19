@@ -18,9 +18,12 @@ class CustomFilterForm(forms.Form):
         self.custom_filters = kwargs.pop('custom_filters', None)
         self.request = kwargs.pop('request', None)
         self.model_admin = kwargs.pop('model_admin', None)
+        self.new_query = kwargs.pop('new_query', None)
         super(CustomFilterForm, self).__init__(*args, **kwargs)
         self.skip_validation = True
         self.params = args[0] if args else QueryDict('')
+        if self.new_query:
+            new_field = self.data['%s_enabled' % self.new_query] = 'on'
         
         if isinstance(self.custom_filter.filter_ordering, list):
             ordering_choices = self.custom_filter.ordering_choices
