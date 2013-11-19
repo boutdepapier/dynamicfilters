@@ -8,6 +8,7 @@ from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils.translation import ugettext as _
+from django.db.models.fields.related import ReverseSingleRelatedObjectDescriptor, SingleRelatedObjectDescriptor
 
 CHOICE_FIELD_CHOICES = (
     ('exact', _(u'is')), 
@@ -250,7 +251,10 @@ class CustomQuery(models.Model):
         model_name = self.field.split('__')[0]
         related_instance = getattr(self.model, model_name)
         if related_instance:
-            return related_instance.field.related.model
+            if isinstance(related_instance, ReverseSingleRelatedObjectDescriptor):
+                return related_instance.field.related.model
+            else:
+                return related_instance.related.model
         return
     
     @property
