@@ -250,7 +250,7 @@ class CustomQuery(models.Model):
         model_name = self.field.split('__')[0]
         related_instance = getattr(self.model, model_name)
         if related_instance:
-            return related_instance.related.model
+            return related_instance.field.related.model
         return
     
     @property
