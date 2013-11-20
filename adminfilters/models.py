@@ -10,6 +10,8 @@ from django.dispatch import receiver
 from django.utils.translation import ugettext as _
 from django.db.models.fields.related import ReverseSingleRelatedObjectDescriptor, SingleRelatedObjectDescriptor
 
+EMPTY_CHOICES = [('', ''),]
+
 CHOICE_FIELD_CHOICES = (
     ('exact', _(u'is')), 
     ('not', _(u'is not'))
@@ -49,10 +51,10 @@ FOREIGN_KEY_CHOICES = (
     ('isnull', _(u'is null'))
 )
 
-BOOLEAN_FIELD_CHOICES = (
+BOOLEAN_FIELD_CHOICES = [
      ('true', _(u'true')), 
      ('false', _(u'False'))
-)
+]
 
 ADMINFILTERS_URLCONF = getattr(settings, 'ADMINFILTERS_URLCONF', None)
 
@@ -225,18 +227,21 @@ class CustomQuery(models.Model):
         For ForeignKey field it's list of aggregated unique values.
         """
         
+        choices = EMPTY_CHOICES if not self.value else []
+        
         if (isinstance(self.model_field, models.CharField) or isinstance(self.model_field, models.IntegerField)) \
                                                                             and getattr(self.model_field, 'choices', None):
-            return [(str(c[0]), c[1]) for c in self.model_field.choices]
+            field_choices = list(self.model_field.choices)
+            return choices + [(str(c[0]), c[1]) for c in field_choices]
         
         if isinstance(self.model_field, (models.fields.related.ForeignKey, models.fields.related.ManyToManyField)):
             fk_ids = [fk_id[0] for fk_id in self.model.objects.values_list('%s__id' % self.field).annotate() if fk_id[0]]
             kwargs = {'id__in': fk_ids}
             fk_models = self.model_field.related.parent_model.objects.filter(**kwargs)
-            return [(m.id, unicode(m)) for m in fk_models]
+            return choices + [(m.id, unicode(m)) for m in list(fk_models)]
         
         if isinstance(self.model_field, models.BooleanField):
-            return BOOLEAN_FIELD_CHOICES
+            return choices + BOOLEAN_FIELD_CHOICES
         return
     
     @property
