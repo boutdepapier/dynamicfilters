@@ -16,14 +16,14 @@ def get_field(value, arg):
 @register.filter
 def get_label(value, arg):
     """Accessing field label for arbitrary field from given form"""
-    field = value.fields.get(arg, None)
+    field = value.fields.get(arg, '')
     return field.label if field else ''
 
 @register.filter
 def get_field_errors(value, arg):
     """Accessing field errors for arbitrary field from given form"""
     if value._errors:
-        return value._errors.get(arg, None)
+        return value._errors.get(arg, '')
     return ''
 
 @register.filter
