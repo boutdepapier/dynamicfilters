@@ -173,8 +173,21 @@ class AddCustomFilterForm(CustomFilterForm):
                            widget=forms.TextInput(attrs={'placeholder': 'New Filter Name', 'size': 40}))
     
     def clean(self):
+        params = self.data
         if self.custom_filter.queries.count() == 0:
             raise forms.ValidationError(_(u'Please add fields to filter set, do not leave it empty.'))
+        for q in self.custom_filter.queries.all():
+            if not params.get('%s_enabled' % q.field, None):
+                if '%s_criteria' % q.field in self._errors:
+                    del self._errors['%s_criteria' % q.field]
+                if '%s_value' % q.field in self._errors:
+                    del self._errors['%s_value' % q.field]
+                if '%s_start' % q.field in self._errors:
+                    del self._errors['%s_start' % q.field]
+                if '%s_end' % q.field in self._errors:
+                    del self._errors['%s_end' % q.field]
+                if '%s_dago' % q.field in self._errors:
+                    del self._errors['%s_dago' % q.field]
         return super(AddCustomFilterForm, self).clean()
     
     def save(self, *args, **kwargs):
