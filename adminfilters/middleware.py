@@ -29,12 +29,20 @@ class CustomFiltersMiddleware(object):
                     custom_filters = CustomFilter.get_filters(user=request.user, path_info=request.path_info)
                     form = CustomFilterForm(custom_filter=current_filter[0],
                                             custom_filters=custom_filters)
+                    opts = current_filter[0].model._meta
+                    urlconf = getattr(request, 'urlconf', ADMINFILTERS_URLCONF)
+                    delete_filter_url = reverse('admin:%s_%s_%s' % (opts.app_label, opts.module_name, 'delete_filter'), 
+                                                urlconf, args=(current_filter[0].pk,))
+                    save_filter_url = reverse('admin:%s_%s_%s' % (opts.app_label, opts.module_name, 'save_filter'), 
+                                              urlconf)
                     content = render_to_string('header.html', {'form': form,
-                                                               'current_filter': current_filter[0],
+                                                               'current_filter': opts,
                                                                'opts': current_filter[0].model._meta,
                                                                'add_param': ADMINFILTERS_ADD_PARAM,
                                                                'load_param': ADMINFILTERS_LOAD_PARAM,
-                                                               'save_param': ADMINFILTERS_SAVE_PARAM})
+                                                               'save_param': ADMINFILTERS_SAVE_PARAM,
+                                                               'save_filter_url': save_filter_url,
+                                                               'delete_filter_url': delete_filter_url})
                     response.content = response.content.replace(ADMINFILTERS_HEADER_TAG, 
                                                                 ADMINFILTERS_HEADER_TAG + content.encode('utf-8'))
                     if current_filter[0].errors:

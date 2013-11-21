@@ -17,7 +17,7 @@
 	<h2>{% trans 'Filters' %} ({{current_filter.verbose_name}}) <a href="javascript:void(null);" id="header_toggle">{% trans 'hide' %}</a></h2>
 	<div id="custom_filters_header">
 		<div class="left_filters_container">
-			<form name="filters" method="get" action="{{opts|save_filter_url}}">
+			<form name="filters" method="get" action="{{save_filter_url}}">
 			{% include 'custom_filter_form.html' %}
 		</div>
 		<div class="right_filters_container">
@@ -34,7 +34,7 @@
 		<input type="button" name="save_button" value="{% trans 'Apply Filter' %}">
 		<input type="button" name="add_button" value="{% trans 'Add New Filter' %}">
 		<p class="deletelink-box inline-container">
-			<a href="{{opts|delete_filter_url:current_filter.pk}}" class="deletelink deletefilter">{% trans 'Delete' %}</a>
+			<a href="{{delete_filter_url}}" class="deletelink deletefilter">{% trans 'Delete' %}</a>
 		</p>
 		</form>
 	</div>

@@ -312,6 +312,8 @@ class CustomQuery(models.Model):
         return
 
 class CustomBundledQuery(models.Model):
+    """Model which stores fields for SimpleListFilter"""
+    
     custom_filter = models.ForeignKey(CustomFilter, related_name='bundled_queries')
     module_name = models.CharField(max_length=255, null=True, blank=True)
     class_name = models.CharField(max_length=255, null=True, blank=True)
