@@ -2,7 +2,7 @@ import datetime
 import urllib
 
 from django.conf import settings
-from django.conf.urls import patterns, url
+from django.conf.urls.defaults import patterns, url
 from django.contrib import admin
 from django.contrib.admin.views.main import ChangeList
 from django.core import urlresolvers
@@ -29,17 +29,17 @@ class CustomChangeList(ChangeList):
         f = super(CustomChangeList, self).get_filters(request)
         return f
 
-    def get_query_set(self, request):
-        qs = super(CustomChangeList, self).get_query_set(request)
+    def get_query_set(self):
+        qs = super(CustomChangeList, self).get_query_set()
         try:
             qs = qs.exclude(**self.exclude_params)
         except:
             pass
         try:
             for query in self.current_filter[0].bundled_queries.all():
-                query_instance = query.query_instance(request, self.bundled_params, 
+                query_instance = query.query_instance(self.bundled_params, 
                                                       self.current_filter.model, self.model_admin)
-                updated_qs = query_instance.queryset(request, qs)
+                updated_qs = query_instance.queryset(qs)
                 if updated_qs: 
                     qs = updated_qs
         except:

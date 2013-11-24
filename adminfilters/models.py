@@ -6,7 +6,6 @@ from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.db import models
 from django.db.models.signals import post_save
-from django.dispatch import receiver
 from django.utils.translation import ugettext as _
 from django.db.models.fields.related import ReverseSingleRelatedObjectDescriptor, SingleRelatedObjectDescriptor
 
@@ -327,8 +326,10 @@ class CustomBundledQuery(models.Model):
             return getattr(module, self.class_name, None)
         return
 
-@receiver(post_save, sender=CustomFilter)
+
 def filter_updater(sender, instance, **kwargs):
     if not instance.path_info:
         instance.path_info = '/admin/%s/%s/' % (instance.app_name, instance.model_name.lower())
         instance.save()
+        
+post_save.connect(filter_updater, sender=CustomFilter)

@@ -81,7 +81,7 @@ class CustomFilterForm(forms.Form):
                                                                              widget=forms.Select(attrs={'class':'criteria'}))
                 if query.choices:
                     attrs = {'class':'value'}
-                    if query.is_multiple or len(self.params.getlist('%s_value' % query.field, None)) > 1:
+                    if query.is_multiple or len(self.params.getlist('%s_value' % query.field)) > 1:
                         widget = forms.SelectMultiple(attrs=attrs)
                         value_field = forms.MultipleChoiceField(choices=query.choices,
                                                     initial=query.value,
@@ -127,7 +127,7 @@ class CustomFilterForm(forms.Form):
 
     def save(self, *args, **kwargs):
         params = self.data
-        filter_ordering = params.getlist('ordering', None)
+        filter_ordering = params.getlist('ordering')
         if '' in filter_ordering:
             filter_ordering.remove('')
         self.custom_filter.filter_ordering = filter_ordering
