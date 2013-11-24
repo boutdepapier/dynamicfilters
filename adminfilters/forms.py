@@ -178,16 +178,23 @@ class AddCustomFilterForm(CustomFilterForm):
             raise forms.ValidationError(_(u'Please add fields to filter set, do not leave it empty.'))
         for q in self.custom_filter.queries.all():
             if not params.get('%s_enabled' % q.field, None):
+                del self.fields['%s_enabled' % q.field]
                 if '%s_criteria' % q.field in self._errors:
                     del self._errors['%s_criteria' % q.field]
+                del self.fields['%s_criteria' % q.field]
                 if '%s_value' % q.field in self._errors:
                     del self._errors['%s_value' % q.field]
+                del self.fields['%s_value' % q.field]
                 if '%s_start' % q.field in self._errors:
                     del self._errors['%s_start' % q.field]
+                del self.fields['%s_start' % q.field]
                 if '%s_end' % q.field in self._errors:
                     del self._errors['%s_end' % q.field]
+                del self.fields['%s_end' % q.field]
                 if '%s_dago' % q.field in self._errors:
                     del self._errors['%s_dago' % q.field]
+                del self.fields['%s_dago' % q.field]
+                q.delete()
         return super(AddCustomFilterForm, self).clean()
     
     def save(self, *args, **kwargs):
