@@ -19,18 +19,23 @@ ADMINFILTERS_SAVE_PARAM = getattr(settings, 'ADMINFILTERS_SAVE_PARAM', 'save_adm
 class CustomChangeList(ChangeList):
     """Customized class for extending filters loading."""
     
-    def get_filters(self, request):
+    def __init__(self, request, model, list_display, list_display_links, list_filter, 
+                 date_hierarchy, search_fields, list_select_related, list_per_page, list_editable, model_admin):
+       
         self.current_filter = CustomFilter.objects.filter(user=request.user, path_info=request.path_info, default=True)
-        
         # loading filter set params into change list, so they will be applied in queryset
         if self.current_filter:
-            filter_params, self.exclude_params, self.bundled_params = self.current_filter[0].get_filter_params()
-            self.params.update(**filter_params)
-        f = super(CustomChangeList, self).get_filters(request)
-        return f
+            self.filter_params, self.exclude_params, self.bundled_params = self.current_filter[0].get_filter_params()
+        cl = super(CustomChangeList, self).__init__(request, model, list_display, list_display_links, list_filter, 
+                                                    date_hierarchy, search_fields, list_select_related, list_per_page, 
+                                                    list_editable, model_admin)
 
     def get_query_set(self):
         qs = super(CustomChangeList, self).get_query_set()
+        try:
+            qs = qs.filter(**self.filter_params)
+        except:
+            pass
         try:
             qs = qs.exclude(**self.exclude_params)
         except:
@@ -82,6 +87,7 @@ class CustomFiltersAdmin(admin.ModelAdmin):
                 # if there're no pre-defined fields, adding first available field so filter set won't be empty
                 CustomQuery.objects.create(custom_filter=new_filter, field=new_filter.choices[0][0])
  
+        self.default_list_filter = self.list_filter
         # disabling right sidebar with filters by setting empty list_filter setting
         self.list_filter = []
         
