@@ -1,4 +1,5 @@
 import datetime
+import json
 import urllib
 
 from django.conf import settings
@@ -6,6 +7,7 @@ from django.conf.urls import patterns, url
 from django.contrib import admin
 from django.contrib.admin.views.main import ChangeList
 from django.core import urlresolvers
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render_to_response, redirect
 from django.template import RequestContext
 
@@ -99,7 +101,7 @@ class CustomFiltersAdmin(admin.ModelAdmin):
         return CustomChangeList
     
     def add_new_filter(self, request):
-        """Controller for adding new filter set. On successful save, user will be redirected back to change list controller."""
+        """Controller for adding new filter set. On successful save, user will be redirected back to changelist controller."""
         
         # creating temporary filter set, it's available to attach field until it's saved
         current_filter, created = CustomFilter.objects.get_or_create(user=request.user, app_name=self.opts.app_label, 
@@ -110,8 +112,8 @@ class CustomFiltersAdmin(admin.ModelAdmin):
             form = AddCustomFilterForm(request.POST, custom_filter=current_filter)
             new_query = form.data.get(ADMINFILTERS_ADD_PARAM, None)
             if new_query:
-                CustomQuery.objects.get_or_create(custom_filter=current_filter, field=new_query)
-                form = AddCustomFilterForm(request.POST.copy(), custom_filter=current_filter, new_query=new_query)
+                form = CustomFilterForm(request.POST.copy(), custom_filter=current_filter, new_query=new_query)
+                return render_to_response('custom_filter_form.html', {'form': form}, context_instance=RequestContext(request))
             elif form.is_valid():
                 form.save()
                 if not '_addanother' in request.POST:
@@ -139,26 +141,32 @@ class CustomFiltersAdmin(admin.ModelAdmin):
     def save_filter(self, request):
         """
         Dedicated controller for saving filter set and its settings. 
-        After performing save, user will be redirected back to change list controller.
         """
-        
+        new_query = request.GET.get(ADMINFILTERS_ADD_PARAM, None)
         load_preset = request.GET.get(ADMINFILTERS_LOAD_PARAM, None)
+        save_filter = request.GET.get(ADMINFILTERS_SAVE_PARAM, None)
+        data = {'success': True}
+
         if load_preset:
             CustomFilter.objects.filter(user=request.user, model_name=self.model.__name__, 
                                         app_name=self.model._meta.app_label).update(default=False)
-            
             CustomFilter.objects.filter(id=load_preset).update(default=True)
+        
         new_filter = CustomFilter.objects.get(user=request.user, model_name=self.model.__name__, 
                                               app_name=self.model._meta.app_label, default=True)
-        new_query = request.GET.get(ADMINFILTERS_ADD_PARAM, None)
         if new_query:
-            CustomQuery.objects.get_or_create(custom_filter=new_filter, field=new_query)
-        save_filter = request.GET.get(ADMINFILTERS_SAVE_PARAM, None)
+            form = CustomFilterForm(request.GET.copy(), custom_filter=new_filter, new_query=new_query)
+            return render_to_response('custom_filter_form.html', {'form': form}, context_instance=RequestContext(request))
+
         if save_filter:
-            form = CustomFilterForm(request.GET, custom_filter=new_filter)
+            form = CustomFilterForm(request.GET.copy(), custom_filter=new_filter)
             if form.is_valid():
                 form.save()
-        return redirect(urlresolvers.reverse('admin:%s_%s_changelist' % (self.opts.app_label, self.opts.module_name)))
+            else:
+                response = render_to_response('custom_filter_form.html', {'form': form}, 
+                                              context_instance=RequestContext(request))
+                data.update(response=response, success=False)
+        return HttpResponse(json.dumps(data), content_type='application/json')
     
     def delete_filter(self, request, filter_id):
         """Deleting custom filter and redirecting back to change list. User allowed to delete own filters only."""

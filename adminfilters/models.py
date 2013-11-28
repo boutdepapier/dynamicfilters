@@ -130,6 +130,10 @@ class CustomFilter(models.Model):
         return [cq.field for cq in self.queries.all()]
 
     @property
+    def all_queries_names(self):
+        return [cq.field for cq in self.bundled_queries.all()] + self.columns
+
+    @property
     def verbose_name(self):
         return self.name if self.name else 'default'
     

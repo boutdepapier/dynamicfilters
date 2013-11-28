@@ -7,6 +7,7 @@
 {% url 'admin:jsi18n' as jsi18nurl %}
 <script type="text/javascript" src="{{ jsi18nurl|default:"../../../jsi18n/" }}"></script>
 {{ media }}
+<script src="http://malsup.github.com/jquery.form.js"></script> 
 {% endblock %}
 
 {% block extrastyle %}
@@ -45,7 +46,7 @@
 		</div>
 		<br clear="both">
 		<br>
-		{% include 'custom_filter_form.html' %}
+		<div id="custom_filter_form">{% include 'custom_filter_form.html' %}</div>
 	</div>
 	<div class="right_filters_container">
 		{{form|get_label:add_param}}

@@ -3,6 +3,7 @@ from django.conf import settings
 from django.contrib.admin import widgets  
 from django.http import QueryDict
 from django.utils.translation import ugettext as _
+from models import CustomQuery
 
 ADMINFILTERS_ADD_PARAM = getattr(settings, 'ADMINFILTERS_ADD_PARAM', 'add_adminfilters')
 ADMINFILTERS_LOAD_PARAM = getattr(settings, 'ADMINFILTERS_LOAD_PARAM', 'load_adminfilters')
@@ -22,16 +23,19 @@ class CustomFilterForm(forms.Form):
         super(CustomFilterForm, self).__init__(*args, **kwargs)
         self.skip_validation = True
         self.params = args[0] if args else QueryDict('')
+        all_fields = [f.replace('_enabled', '') for f in self.data if f.endswith('_enabled')]
+        self.new_fields = [f for f in all_fields if f not in self.custom_filter.all_queries_names]
         if self.new_query:
-            new_field = self.data['%s_enabled' % self.new_query] = 'on'
+            self.data['%s_enabled' % self.new_query] = 'on'
+            self.new_fields.append(self.new_query)
         
         if isinstance(self.custom_filter.filter_ordering, list):
             ordering_choices = self.custom_filter.ordering_choices
-            ordering_field = forms.MultipleChoiceField()
+            ordering_field = forms.MultipleChoiceField(required=False)
         else:
             widget = forms.Select(attrs={'class':'single_ordering'})
             ordering_choices = [('', '')] + self.custom_filter.ordering_choices
-            ordering_field = forms.ChoiceField(widget=widget)
+            ordering_field = forms.ChoiceField(widget=widget, required=False)
         self.fields['ordering'] = ordering_field
         self.fields['ordering'].choices = ordering_choices
         self.fields['ordering'].initial = self.custom_filter.filter_ordering
@@ -65,8 +69,10 @@ class CustomFilterForm(forms.Form):
                                                                              required=False,
                                                                              widget=forms.Select(attrs={'class':'criteria'}))
                 self.field_rows.append(row)
-                
-        for query in self.custom_filter.queries.all():
+        
+        for query in list(self.custom_filter.queries.all()) + self.new_fields:
+            if not isinstance(query, CustomQuery):
+                query = CustomQuery(custom_filter=self.custom_filter, field=query)
             if query.model_field:
                 row = ['%s_enabled' % query.field,
                        '%s_criteria' % query.field]
@@ -125,6 +131,7 @@ class CustomFilterForm(forms.Form):
                         self.initial['%s_value' % query.field] = ''
                 self.field_rows.append(row)
 
+
     def save(self, *args, **kwargs):
         params = self.data
         filter_ordering = params.getlist('ordering', None)
@@ -140,7 +147,9 @@ class CustomFilterForm(forms.Form):
                 query.save()
             else:
                 query.delete()
-        for query in self.custom_filter.queries.all():
+        for query in list(self.custom_filter.queries.all()) + self.new_fields:
+            if not isinstance(query, CustomQuery):
+                query = CustomQuery(custom_filter=self.custom_filter, field=query)
             if params.get('%s_enabled' % query.field, None):
                 criteria = params.get('%s_criteria' % query.field, 'exact')
                 query.criteria = criteria
@@ -179,21 +188,12 @@ class AddCustomFilterForm(CustomFilterForm):
         for q in self.custom_filter.queries.all():
             if not params.get('%s_enabled' % q.field, None):
                 del self.fields['%s_enabled' % q.field]
-                if '%s_criteria' % q.field in self._errors:
-                    del self._errors['%s_criteria' % q.field]
-                del self.fields['%s_criteria' % q.field]
-                if '%s_value' % q.field in self._errors:
-                    del self._errors['%s_value' % q.field]
-                del self.fields['%s_value' % q.field]
-                if '%s_start' % q.field in self._errors:
-                    del self._errors['%s_start' % q.field]
-                del self.fields['%s_start' % q.field]
-                if '%s_end' % q.field in self._errors:
-                    del self._errors['%s_end' % q.field]
-                del self.fields['%s_end' % q.field]
-                if '%s_dago' % q.field in self._errors:
-                    del self._errors['%s_dago' % q.field]
-                del self.fields['%s_dago' % q.field]
+                for suffix in ['criteria', 'value', 'start', 'end', 'dago']:
+                    fname = '%s_%s' % (q.field, suffix)
+                    if fname in self._errors:
+                        del self._errors[fname]
+                    if fname in self.fields:
+                        del self.fields[fname]
                 q.delete()
         return super(AddCustomFilterForm, self).clean()
     

@@ -13,12 +13,13 @@
     	});
 	})(django.jQuery);
 </script>
+<script src="http://malsup.github.com/jquery.form.js"></script> 
 <div id="custom_filters">
 	<h2>{% trans 'Filters' %} ({{current_filter.verbose_name}}) <a href="javascript:void(null);" id="header_toggle">{% trans 'hide' %}</a></h2>
 	<div id="custom_filters_header">
 		<div class="left_filters_container">
 			<form name="filters" method="get" action="{{save_filter_url}}">
-			{% include 'custom_filter_form.html' %}
+			<div id="custom_filter_form">{% include 'custom_filter_form.html' %}</div>
 		</div>
 		<div class="right_filters_container">
 			{{form|get_label:add_param}}

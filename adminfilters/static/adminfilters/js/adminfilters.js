@@ -7,14 +7,18 @@
             var form = $('form');
         }
         $('.add_adminfilters').change(function () {
-            form.submit();
+        	var fname = $(this).val();
+            form.ajaxSubmit({'success': update_form});
+        	$(this).find("option[value='"+fname+"']").remove();
+        	$(this).find("option[value='']").attr('selected', true);
         });
         $('.load_adminfilters').click(function () {
-            form.submit();
+            form.ajaxSubmit({'success': save_form, 'dataType': 'json'});
         });
         $('input[name=save_button]').click(function () {
+            $('.add_adminfilters').val('');
             $('.save_adminfilters').val(1);
-            form.submit();
+            form.ajaxSubmit({'success': save_form, 'dataType': 'json'});
         });
         $('input[name=add_button]').click(function () {
             location.href = 'add_filter/'
@@ -122,4 +126,15 @@ function expand_ordering_choices() {
 function reduce_ordering_choices() {
     $('select[name=ordering]').removeAttr('multiple');
     $('#ordering_toggle').html('<a href="javascript:expand_ordering_choices()">expand</a>');
+}
+function update_form(responseText, statusText, xhr, $form) {
+	$('#custom_filter_form').html(responseText);
+}
+function save_form(data) {
+	if (data.success) {
+		location.reload();
+	}
+	else {
+		$('#custom_filter_form').html(responseText);
+	}
 }
