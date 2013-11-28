@@ -1,5 +1,5 @@
-(function ($) {
-    $(document).ready(function ($) {
+$(function() {
+    $(document).ready(function () {
         if ($('form').length > 1) {
             var form = $('form[name=filters]');
         }
@@ -88,7 +88,7 @@
         });
     });
     $('.single_ordering').after('<a href="javascript:expand_ordering_choices();" id="ordering_toggle">expand</a>');
-})(django.jQuery);
+});
 function expand_choices(field_name) {
     $('select[name=' + field_name + '_value]').attr('multiple', 'multiple');
     $('#' + field_name + '_toggle').html('<a href="javascript:reduce_choices(\'' + field_name + '\')">reduce</a>');
