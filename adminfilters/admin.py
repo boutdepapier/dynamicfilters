@@ -57,7 +57,8 @@ class CustomFiltersAdmin(admin.ModelAdmin):
               '/static/admin/js/jquery.js',
               '/static/adminfilters/js/jquery_rebind.js',
               '/static/adminfilters/js/jquery.cookie.js',
-              '/static/adminfilters/js/adminfilters.js')
+              '/static/adminfilters/js/adminfilters.js',
+              '/static/adminfilters/js/jquery.form.js')
         
         css = {
                'all': ('/static/adminfilters/css/adminfilters.css',)
