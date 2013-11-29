@@ -79,8 +79,11 @@ class CustomFiltersAdmin(admin.ModelAdmin):
                 if isinstance(field, (str, unicode)):
                     CustomQuery.objects.get_or_create(custom_filter=new_filter, field=field)
                 else:
-                    CustomBundledQuery.objects.get_or_create(custom_filter=new_filter, module_name=field.__module__,
-                                                             class_name=field.__name__)
+                    query = CustomBundledQuery.objects.get_or_create(custom_filter=new_filter, module_name=field.__module__,
+                                                             class_name=field.__name__)[0]
+                    query_instance = query.query_instance(None, {}, self.model, None)
+                    query.field = query_instance.parameter_name
+                    query.save()
             else:
                 # if there're no pre-defined fields, adding first available field so filter set won't be empty
                 CustomQuery.objects.create(custom_filter=new_filter, field=new_filter.choices[0][0])
