@@ -37,7 +37,63 @@ $(function() {
                 $.cookie(cookie_name, true);
             }
         });
-        $('.enable').click(function () {
+        bind_events();
+    });
+    $('.single_ordering').after('<a href="javascript:expand_ordering_choices();" id="ordering_toggle">expand</a>');
+});
+function expand_choices(field_name) {
+    $('select[name=' + field_name + '_value]').attr('multiple', 'multiple');
+    $('#' + field_name + '_toggle').html('<a href="javascript:reduce_choices(\'' + field_name + '\')">reduce</a>');
+}
+function reduce_choices(field_name) {
+    $('select[name=' + field_name + '_value]').removeAttr('multiple');
+    $('#' + field_name + '_toggle').html('<a href="javascript:expand_choices(\'' + field_name + '\')">expand</a>');
+}
+function reset_containers(fname) {
+    $('#' + fname + '_value_container').show();
+    $('#' + fname + '_dcontainer').hide();
+}
+function load_header_visibility() {
+    if (typeof($.cookie(cookie_name)) == 'undefined') {
+        $.cookie(cookie_name, true);
+    }
+    else {
+        var header_visible = $.cookie(cookie_name);
+        if (header_visible == 'false') {
+            $('#custom_filters_header').hide();
+            $('#header_toggle').text('show');
+        }
+    }
+}
+function delete_filter(filter_name) {
+    if (confirm('Are you sure you want to delete current custom filter "' + filter_name + '"')) {
+        location.href = $('.deletefilter').attr('href');
+    }
+    return false;
+}
+function expand_ordering_choices() {
+    $('select[name=ordering]').attr('multiple', 'multiple');
+    $('#ordering_toggle').html('<a href="javascript:reduce_ordering_choices()">reduce</a>');
+}
+function reduce_ordering_choices() {
+    $('select[name=ordering]').removeAttr('multiple');
+    $('#ordering_toggle').html('<a href="javascript:expand_ordering_choices()">expand</a>');
+}
+function update_form(responseText, statusText, xhr, $form) {
+	$('#custom_filter_form').html(responseText);
+	bind_events();
+	DateTimeShortcuts.init();
+}
+function save_form(data) {
+	if (data.success) {
+		location.reload();
+	}
+	else {
+		$('#custom_filter_form').html(responseText);
+	}
+}
+function bind_events() {
+	$('.enable').click(function () {
             var enabled = $(this).attr('checked');
             var enable_name = $(this).attr('name');
             var field_name = enable_name.substr(0, enable_name.indexOf('_enabled'));
@@ -89,55 +145,4 @@ $(function() {
                 $(this).trigger('change');
             }
         });
-    });
-    $('.single_ordering').after('<a href="javascript:expand_ordering_choices();" id="ordering_toggle">expand</a>');
-});
-function expand_choices(field_name) {
-    $('select[name=' + field_name + '_value]').attr('multiple', 'multiple');
-    $('#' + field_name + '_toggle').html('<a href="javascript:reduce_choices(\'' + field_name + '\')">reduce</a>');
-}
-function reduce_choices(field_name) {
-    $('select[name=' + field_name + '_value]').removeAttr('multiple');
-    $('#' + field_name + '_toggle').html('<a href="javascript:expand_choices(\'' + field_name + '\')">expand</a>');
-}
-function reset_containers(fname) {
-    $('#' + fname + '_value_container').show();
-    $('#' + fname + '_dcontainer').hide();
-}
-function load_header_visibility() {
-    if (typeof($.cookie(cookie_name)) == 'undefined') {
-        $.cookie(cookie_name, true);
-    }
-    else {
-        var header_visible = $.cookie(cookie_name);
-        if (header_visible == 'false') {
-            $('#custom_filters_header').hide();
-            $('#header_toggle').text('show');
-        }
-    }
-}
-function delete_filter(filter_name) {
-    if (confirm('Are you sure you want to delete current custom filter "' + filter_name + '"')) {
-        location.href = $('.deletefilter').attr('href');
-    }
-    return false;
-}
-function expand_ordering_choices() {
-    $('select[name=ordering]').attr('multiple', 'multiple');
-    $('#ordering_toggle').html('<a href="javascript:reduce_ordering_choices()">reduce</a>');
-}
-function reduce_ordering_choices() {
-    $('select[name=ordering]').removeAttr('multiple');
-    $('#ordering_toggle').html('<a href="javascript:expand_ordering_choices()">expand</a>');
-}
-function update_form(responseText, statusText, xhr, $form) {
-	$('#custom_filter_form').html(responseText);
-}
-function save_form(data) {
-	if (data.success) {
-		location.reload();
-	}
-	else {
-		$('#custom_filter_form').html(responseText);
-	}
 }
