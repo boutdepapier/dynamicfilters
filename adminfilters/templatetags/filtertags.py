@@ -29,13 +29,3 @@ def get_field_errors(value, arg):
 @register.filter
 def get_container_name(value):
     return value[0:value.find('_')]
-
-@register.filter
-def delete_filter_url(value, arg):
-    """Reversing URL for delete filter controller, using custom URLconf for admin"""
-    return reverse('admin:%s_%s_%s' % (value.app_label, value.module_name, 'delete_filter'), ADMINFILTERS_URLCONF, args=(arg,))
-
-@register.filter
-def save_filter_url(value):
-    """Reversing URL for save filter controller, using custom URLconf for admin"""
-    return reverse('admin:%s_%s_%s' % (value.app_label, value.module_name, 'save_filter'), ADMINFILTERS_URLCONF)

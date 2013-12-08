@@ -21,7 +21,10 @@ $(function() {
             form.ajaxSubmit({'success': save_form, 'dataType': 'json'});
         });
         $('input[name=add_button]').click(function () {
-            location.href = 'add_filter/'
+            location.href = add_filter_url;
+        });
+        $('input[name=clear_button]').click(function () {
+            location.href = clear_filter_url;
         });
         $('#header_toggle').click(function () {
             $('#custom_filters_header').toggle();

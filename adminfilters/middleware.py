@@ -35,6 +35,10 @@ class CustomFiltersMiddleware(object):
                                                 urlconf, args=(current_filter[0].pk,))
                     save_filter_url = reverse('admin:%s_%s_%s' % (opts.app_label, opts.module_name, 'save_filter'), 
                                               urlconf)
+                    add_filter_url = reverse('admin:%s_%s_%s' % (opts.app_label, opts.module_name, 'add_filter'), 
+                                              urlconf)
+                    clear_filter_url = reverse('admin:%s_%s_%s' % (opts.app_label, opts.module_name, 'clear_filter'), 
+                                              urlconf)
                     content = render_to_string('header.html', {'form': form,
                                                                'current_filter': opts,
                                                                'opts': current_filter[0].model._meta,
@@ -42,7 +46,9 @@ class CustomFiltersMiddleware(object):
                                                                'load_param': ADMINFILTERS_LOAD_PARAM,
                                                                'save_param': ADMINFILTERS_SAVE_PARAM,
                                                                'save_filter_url': save_filter_url,
-                                                               'delete_filter_url': delete_filter_url})
+                                                               'delete_filter_url': delete_filter_url,
+                                                               'add_filter_url': add_filter_url,
+                                                               'clear_filter_url': clear_filter_url})
                     response.content = response.content.replace(ADMINFILTERS_HEADER_TAG, 
                                                                 ADMINFILTERS_HEADER_TAG + content.encode('utf-8'))
                     if current_filter[0].errors:

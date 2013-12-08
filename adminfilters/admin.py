@@ -1,6 +1,4 @@
-import datetime
 import json
-import urllib
 
 from django.conf import settings
 from django.conf.urls import patterns, url
@@ -48,6 +46,7 @@ class CustomChangeList(ChangeList):
             pass
         return qs
 
+
 class CustomFiltersAdmin(admin.ModelAdmin):
 
     class Media:
@@ -65,16 +64,17 @@ class CustomFiltersAdmin(admin.ModelAdmin):
         }
     
     def changelist_view(self, request, *args, **kwargs):
+        if not getattr(self, 'default_list_filter', None):
+            self.default_list_filter = self.list_filter
+        
         # Checking if default filter set was created for current application and model, for current user.
         # Otherwise, creating one. Eventually, there's at least one set of filters for application model per each user.
-        new_filter, created = CustomFilter.objects.get_or_create(user=request.user, path_info=request.path_info,
-                                                 model_name=self.model.__name__, app_name=self.model._meta.app_label,
-                                                 default=True)
-        
-        
+        new_filter, created = CustomFilter.objects.get_or_create(user=request.user, model_name=self.model.__name__, 
+                                                                 app_name=self.model._meta.app_label, default=True)
         # once custom filter set has been created, adding fields from list_filter setting to current filter set
         if created:
-            for field in self.list_filter:
+            for field in self.default_list_filter:
+                print field
                 # since custom list_filters are not supported for now, limiting filterset criteria to fields only
                 if isinstance(field, (str, unicode)):
                     CustomQuery.objects.get_or_create(custom_filter=new_filter, field=field)
@@ -91,7 +91,7 @@ class CustomFiltersAdmin(admin.ModelAdmin):
         # disabling right sidebar with filters by setting empty list_filter setting
         self.list_filter = []
         
-        # overridding default ordering
+        # overriding default ordering
         if new_filter.filter_ordering:
             self.ordering = new_filter.filter_ordering
         return super(CustomFiltersAdmin, self).changelist_view(request, *args, **kwargs)
@@ -179,6 +179,13 @@ class CustomFiltersAdmin(admin.ModelAdmin):
         custom_filter.delete()
         return redirect(urlresolvers.reverse('admin:%s_%s_changelist' % (self.opts.app_label, self.opts.module_name)))
     
+    def clear_filter(self, request):
+        current_filter = CustomFilter.objects.filter(user=request.user, model_name=self.model.__name__, 
+                                                     app_name=self.model._meta.app_label, default=True)
+        if current_filter:
+            current_filter[0].delete()
+        return redirect(urlresolvers.reverse('admin:%s_%s_changelist' % (self.opts.app_label, self.opts.module_name)))
+    
     def get_urls(self):
         """Extending current ModelAdmin's urlconf."""
         
@@ -188,6 +195,7 @@ class CustomFiltersAdmin(admin.ModelAdmin):
             url(r'^add_filter/$', self.add_new_filter, name='%s_%s_add_filter' % options),
             url(r'^save_filter/$', self.save_filter, name='%s_%s_save_filter' % options),
             url(r'^delete_filter/(\d+)/$', self.delete_filter, name='%s_%s_delete_filter' % options),
+            url(r'^clear_filter/$', self.clear_filter, name='%s_%s_clear_filter' % options),
         )
         
         return custom_urls + urls

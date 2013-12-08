@@ -4,14 +4,16 @@
 	var custom_filter_id = '{{current_filter.id}}';
 	var cookie_name = custom_filter_id + '_cfilter';
 	var filter_name = '{{current_filter.verbose_name}}';
-	(function($) {
-    	$(document).ready(function($) {
+	var add_filter_url = '{{add_filter_url}}';
+	var clear_filter_url = '{{clear_filter_url}}';
+	$(function() {
+    	$(document).ready(function () {
         	load_header_visibility();
         	$('.deletefilter').click(function(){
         		delete_filter(filter_name);
         	});
     	});
-	})(django.jQuery);
+	});
 </script>
 <div id="custom_filters">
 	<h2>{% trans 'Filters' %} ({{current_filter.verbose_name}}) <a href="javascript:void(null);" id="header_toggle">{% trans 'hide' %}</a></h2>
@@ -33,6 +35,7 @@
 		<input type="hidden" name="{{save_param}}" value="" class="save_adminfilters">
 		<input type="button" name="save_button" value="{% trans 'Apply Filter' %}">
 		<input type="button" name="add_button" value="{% trans 'Add New Filter' %}">
+		<input type="button" name="clear_button" value="{% trans 'Clear Filter' %}">
 		<p class="deletelink-box inline-container">
 			<a href="{{delete_filter_url}}" class="deletelink deletefilter">{% trans 'Delete' %}</a>
 		</p>
