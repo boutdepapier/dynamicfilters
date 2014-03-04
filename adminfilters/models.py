@@ -111,7 +111,7 @@ class CustomFilter(models.Model):
     def choices(self):
         """List of fields, available for attaching to filter set. Already attached fields and primary key are excluded."""
         
-        return [(f.name, f.verbose_name.capitalize()) for f in self.all_fields if f.name not in self.columns and not f.primary_key]
+        return [(f.name, unicode(f.verbose_name).capitalize()) for f in self.all_fields if f.name not in self.columns and not f.primary_key]
 
     @property
     def ordering_choices(self):
