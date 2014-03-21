@@ -183,7 +183,7 @@ class AddCustomFilterForm(CustomFilterForm):
     
     def clean(self):
         params = self.data
-        if self.custom_filter.queries.count() == 0:
+        if not filter(lambda x: x.endswith('_enabled'), params.keys()):
             raise forms.ValidationError(_(u'Please add fields to filter set, do not leave it empty.'))
         for q in self.custom_filter.queries.all():
             if not params.get('%s_enabled' % q.field, None):
