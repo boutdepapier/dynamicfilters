@@ -31,3 +31,8 @@ p.datetime {
 	width:400px;
 	display:none;
 }
+#header_toggle {
+	text-decoration: underline !important;
+	color: #fff;
+	font-size: 0.95em;
+}
