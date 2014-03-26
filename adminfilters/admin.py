@@ -15,6 +15,7 @@ from forms import CustomFilterForm, AddCustomFilterForm
 ADMINFILTERS_ADD_PARAM = getattr(settings, 'ADMINFILTERS_ADD_PARAM', 'add_adminfilters')
 ADMINFILTERS_LOAD_PARAM = getattr(settings, 'ADMINFILTERS_LOAD_PARAM', 'load_adminfilters')
 ADMINFILTERS_SAVE_PARAM = getattr(settings, 'ADMINFILTERS_SAVE_PARAM', 'save_adminfilters')
+ADMINFILTERS_CREATE_FILTERS = getattr(settings, 'ADMINFILTERS_CREATE_FILTERS', False)
 
 class CustomChangeList(ChangeList):
     """Customized class for extending filters loading."""
@@ -72,9 +73,8 @@ class CustomFiltersAdmin(admin.ModelAdmin):
         new_filter, created = CustomFilter.objects.get_or_create(user=request.user, model_name=self.model.__name__, 
                                                                  app_name=self.model._meta.app_label, default=True)
         # once custom filter set has been created, adding fields from list_filter setting to current filter set
-        if created:
+        if ADMINFILTERS_CREATE_FILTERS and created:
             for field in self.default_list_filter:
-                print field
                 # since custom list_filters are not supported for now, limiting filterset criteria to fields only
                 if isinstance(field, (str, unicode)):
                     CustomQuery.objects.get_or_create(custom_filter=new_filter, field=field)
