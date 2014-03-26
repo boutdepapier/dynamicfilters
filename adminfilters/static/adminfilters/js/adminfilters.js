@@ -15,6 +15,12 @@ $(function() {
         $('.load_adminfilters').click(function () {
             form.ajaxSubmit({'success': save_form, 'dataType': 'json'});
         });
+        form.submit(function () {
+       		$('.add_adminfilters').val('');
+            $('.save_adminfilters').val(1);
+       		form.ajaxSubmit({'success': save_form, 'dataType': 'json'});
+        	return false;
+        });
         $('input[name=save_button]').click(function () {
             $('.add_adminfilters').val('');
             $('.save_adminfilters').val(1);
