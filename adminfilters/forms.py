@@ -80,7 +80,7 @@ class CustomFilterForm(forms.Form):
                                                                              required=False,
                                                                              widget=forms.Select(attrs={'class':'criteria'}))
                 if query.choices:
-                    attrs = {'class':'value'}
+                    attrs = {'class':'value', 'width': 200}
                     if query.is_multiple or len(self.params.getlist('%s_value' % query.field)) > 1:
                         widget = forms.SelectMultiple(attrs=attrs)
                         value_field = forms.MultipleChoiceField(choices=query.choices,
