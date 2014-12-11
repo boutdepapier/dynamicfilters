@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.contrib import messages
 from django.core.urlresolvers import reverse
+from django.shortcuts import redirect
 from django.template.loader import render_to_string
 from models import CustomFilter
 from forms import CustomFilterForm
@@ -15,6 +16,11 @@ class CustomFiltersMiddleware(object):
     """Middleware for loading current default filter set and rendering it."""
     
     def process_response(self, request, response):
+        if 'use_new_filters' in request.META['QUERY_STRING']:
+            return redirect(request.path)
+        if not request.session.get('use_new_filters'):
+            return response
+
         if getattr(request, 'user', None) and request.user.is_authenticated():
             current_filter = CustomFilter.objects.filter(user=request.user, path_info=request.path_info, default=True)
             if current_filter:
@@ -49,8 +55,7 @@ class CustomFiltersMiddleware(object):
                                                                'delete_filter_url': delete_filter_url,
                                                                'add_filter_url': add_filter_url,
                                                                'clear_filter_url': clear_filter_url})
-                    response.content = response.content.replace(ADMINFILTERS_HEADER_TAG, 
-                                                                ADMINFILTERS_HEADER_TAG + content.encode('utf-8'))
+                    response.content = response.content.replace(ADMINFILTERS_HEADER_TAG,  ADMINFILTERS_HEADER_TAG + content.encode('utf-8'))
                     if current_filter[0].errors:
                         messages.warning(request, current_filter[0].errors)
         return response
