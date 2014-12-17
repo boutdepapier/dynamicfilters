@@ -21,6 +21,9 @@ class CustomChangeList(ChangeList):
     """Customized class for extending filters loading."""
     
     def get_filters(self, request):
+        # import ipdb; ipdb.set_trace()
+        if not request.session.get('use_new_filters'):
+            return super(CustomChangeList, self).get_filters(request)
         self.current_filter = CustomFilter.objects.filter(user=request.user, path_info=request.path_info, default=True)
         
         # loading filter set params into change list, so they will be applied in queryset
@@ -31,6 +34,7 @@ class CustomChangeList(ChangeList):
         return f
 
     def get_query_set(self, request):
+
         qs = super(CustomChangeList, self).get_query_set(request)
         try:
             qs = qs.exclude(**self.exclude_params)
@@ -65,6 +69,9 @@ class CustomFiltersAdmin(admin.ModelAdmin):
         }
     
     def changelist_view(self, request, *args, **kwargs):
+        if not request.session.get('use_new_filters'):
+            return super(CustomFiltersAdmin, self).changelist_view(request, *args, **kwargs)
+
         if not getattr(self, 'default_list_filter', None):
             self.default_list_filter = self.list_filter
         
@@ -87,10 +94,10 @@ class CustomFiltersAdmin(admin.ModelAdmin):
             else:
                 # if there're no pre-defined fields, adding first available field so filter set won't be empty
                 CustomQuery.objects.create(custom_filter=new_filter, field=new_filter.choices[0][0])
- 
+
         # disabling right sidebar with filters by setting empty list_filter setting
         self.list_filter = []
-        
+
         # overriding default ordering
         if new_filter.filter_ordering:
             self.ordering = new_filter.filter_ordering
@@ -100,9 +107,23 @@ class CustomFiltersAdmin(admin.ModelAdmin):
         return True
     
     def get_changelist(self, request, **kwargs):
+        use_new_filters = request.GET.get('use_new_filters')
+        if use_new_filters:
+            if use_new_filters == 'true':
+                request.session['use_new_filters'] = True
+            elif use_new_filters == 'false':
+                request.session['use_new_filters'] = False
+                if getattr(self, 'default_list_filter', None):
+                    self.list_filter = self.default_list_filter
+            request.GET._mutable = True
+            request.GET.pop('use_new_filters')
+            request.GET._mutable = False
+
         """Extending change list class for loading custom filters."""
-        
+        # if request.session.get('use_new_filters'):
         return CustomChangeList
+        # return super(CustomFiltersAdmin, self).get_changelist(request, **kwargs)
+
     
     def add_new_filter(self, request):
         """Controller for adding new filter set. On successful save, user will be redirected back to changelist controller."""
