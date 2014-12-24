@@ -18,7 +18,7 @@ class CustomFiltersMiddleware(object):
     def process_response(self, request, response):
         if 'use_new_filters' in request.META['QUERY_STRING']:
             return redirect(request.path)
-        if not request.session.get('use_new_filters'):
+        if hasattr(request, 'session') and not request.session.get('use_new_filters'):
             return response
 
         if getattr(request, 'user', None) and request.user.is_authenticated():
