@@ -17,11 +17,11 @@ ADMINFILTERS_LOAD_PARAM = getattr(settings, 'ADMINFILTERS_LOAD_PARAM', 'load_adm
 ADMINFILTERS_SAVE_PARAM = getattr(settings, 'ADMINFILTERS_SAVE_PARAM', 'save_adminfilters')
 ADMINFILTERS_CREATE_FILTERS = getattr(settings, 'ADMINFILTERS_CREATE_FILTERS', False)
 
+
 class CustomChangeList(ChangeList):
     """Customized class for extending filters loading."""
     
     def get_filters(self, request):
-        # import ipdb; ipdb.set_trace()
         if not request.session.get('use_new_filters'):
             return super(CustomChangeList, self).get_filters(request)
         self.current_filter = CustomFilter.objects.filter(user=request.user, path_info=request.path_info, default=True)
