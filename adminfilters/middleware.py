@@ -12,6 +12,7 @@ ADMINFILTERS_HEADER_TAG = getattr(settings, 'ADMINFILTERS_HEADER_TAG', '<div cla
 ADMINFILTERS_SAVE_PARAM = getattr(settings, 'ADMINFILTERS_SAVE_PARAM', 'save_adminfilters')
 ADMINFILTERS_URLCONF = getattr(settings, 'ADMINFILTERS_URLCONF', None)
 
+
 class CustomFiltersMiddleware(object):
     """Middleware for loading current default filter set and rendering it."""
     

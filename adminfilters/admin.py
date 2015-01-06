@@ -42,10 +42,10 @@ class CustomChangeList(ChangeList):
             pass
         try:
             for query in self.current_filter[0].bundled_queries.all():
-                query_instance = query.query_instance(request, self.bundled_params, 
+                query_instance = query.query_instance(request, self.bundled_params,
                                                       self.current_filter.model, self.model_admin)
                 updated_qs = query_instance.queryset(request, qs)
-                if updated_qs: 
+                if updated_qs:
                     qs = updated_qs
         except:
             pass
