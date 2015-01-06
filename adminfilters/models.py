@@ -66,6 +66,7 @@ def import_module(app_name):
         module = __import__('%s.models' % app_name, fromlist=['models'])
     return module
 
+
 class CustomFilter(models.Model):
     """Model which stores filter set. """
     
@@ -181,7 +182,10 @@ class CustomFilter(models.Model):
                     elif query.criteria.startswith('_not'):
                         exclude_params[key] = query.field_value
                     elif query.field_value:     # avoiding load of empty filter value which causes database error
-                        filter_params[key] = query.field_value
+                        if query.model_field.get_internal_type() == 'BooleanField':
+                            filter_params[key] = {'true': True, 'false': False}[query.field_value]
+                        else:
+                            filter_params[key] = query.field_value
         for query in self.bundled_queries.all():
             bundled_params[query.field] = query.value
         return filter_params, exclude_params, bundled_params

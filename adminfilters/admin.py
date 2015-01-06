@@ -42,10 +42,10 @@ class CustomChangeList(ChangeList):
             pass
         try:
             for query in self.current_filter[0].bundled_queries.all():
-                query_instance = query.query_instance(request, self.bundled_params, 
+                query_instance = query.query_instance(request, self.bundled_params,
                                                       self.current_filter.model, self.model_admin)
                 updated_qs = query_instance.queryset(request, qs)
-                if updated_qs: 
+                if updated_qs:
                     qs = updated_qs
         except:
             pass
@@ -120,13 +120,13 @@ class CustomFiltersAdmin(admin.ModelAdmin):
             request.GET._mutable = False
 
         """Extending change list class for loading custom filters."""
-        # if request.session.get('use_new_filters'):
         return CustomChangeList
-        # return super(CustomFiltersAdmin, self).get_changelist(request, **kwargs)
-
     
     def add_new_filter(self, request):
-        """Controller for adding new filter set. On successful save, user will be redirected back to changelist controller."""
+        """
+        Controller for adding new filter set.
+        On successful save, user will be redirected back to changelist controller.
+        """
         
         # creating temporary filter set, it's available to attach field until it's saved
         current_filter, created = CustomFilter.objects.get_or_create(user=request.user, app_name=self.opts.app_label, 
@@ -141,7 +141,7 @@ class CustomFiltersAdmin(admin.ModelAdmin):
                 return render_to_response('custom_filter_form.html', {'form': form}, context_instance=RequestContext(request))
             elif form.is_valid():
                 form.save()
-                if not '_addanother' in request.POST:
+                if '_addanother' not in request.POST:
                     return redirect(urlresolvers.reverse('admin:%s_%s_changelist' % (self.opts.app_label, self.opts.module_name)))
                 
                 # clearing form if user wants to add one more filter set
