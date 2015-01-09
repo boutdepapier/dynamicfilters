@@ -181,6 +181,8 @@ class CustomFilter(models.Model):
                         filter_params['%s__lte' % key] = query.field_value[1]
                     elif query.criteria.startswith('_not'):
                         exclude_params[key] = query.field_value
+                    elif query.criteria == 'not':
+                        exclude_params[key[:-5]] = query.field_value
                     elif query.field_value:     # avoiding load of empty filter value which causes database error
                         if query.model_field.get_internal_type() == 'BooleanField':
                             filter_params[key] = {'true': True, 'false': False}[query.field_value]
@@ -188,6 +190,7 @@ class CustomFilter(models.Model):
                             filter_params[key] = query.field_value
         for query in self.bundled_queries.all():
             bundled_params[query.field] = query.value
+        # import ipdb; ipdb.set_trace()
         return filter_params, exclude_params, bundled_params
 
     @property

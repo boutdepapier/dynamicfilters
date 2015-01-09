@@ -3,11 +3,17 @@ import json
 from django.conf import settings
 from django.conf.urls import patterns, url
 from django.contrib import admin
-from django.contrib.admin.views.main import ChangeList
+from django.contrib.admin.filters import FieldListFilter
+from django.contrib.admin.views.main import ChangeList, IGNORED_PARAMS
 from django.core import urlresolvers
+from django.core.exceptions import SuspiciousOperation
+from django.db import models
+from django.db.models.fields import FieldDoesNotExist
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render_to_response, redirect
 from django.template import RequestContext
+from django.utils.encoding import smart_str
+from django.contrib.admin.util import get_fields_from_path, lookup_needs_distinct, prepare_lookup_value
 
 from models import CustomFilter, CustomQuery, CustomBundledQuery
 from forms import CustomFilterForm, AddCustomFilterForm
@@ -24,14 +30,87 @@ class CustomChangeList(ChangeList):
     def get_filters(self, request):
         if not request.session.get('use_new_filters'):
             return super(CustomChangeList, self).get_filters(request)
+
+        new_filter, created = CustomFilter.objects.get_or_create(user=request.user, model_name=self.model.__name__, app_name=self.model._meta.app_label, default=True)
+        form = CustomFilterForm(request.GET.copy(), custom_filter=new_filter)
+        if form.is_valid():
+            form.save()
+
         self.current_filter = CustomFilter.objects.filter(user=request.user, path_info=request.path_info, default=True)
         
         # loading filter set params into change list, so they will be applied in queryset
         if self.current_filter:
             filter_params, self.exclude_params, self.bundled_params = self.current_filter[0].get_filter_params()
             self.params.update(**filter_params)
-        f = super(CustomChangeList, self).get_filters(request)
-        return f
+        # f = super(CustomChangeList, self).get_filters(request)
+        lookup_params = self.params.copy() # a dictionary of the query string
+        use_distinct = False
+
+        # Remove all the parameters that are globally and systematically
+        # ignored.
+        for ignored in IGNORED_PARAMS:
+            if ignored in lookup_params:
+                del lookup_params[ignored]
+
+        # Normalize the types of keys
+        for key, value in lookup_params.items():
+            if not isinstance(key, str):
+                # 'key' will be used as a keyword argument later, so Python
+                # requires it to be a string.
+                del lookup_params[key]
+                lookup_params[smart_str(key)] = value
+
+            if not self.model_admin.lookup_allowed(key, value):
+                raise SuspiciousOperation("Filtering by %s not allowed" % key)
+
+        filter_specs = []
+        if self.list_filter:
+            for list_filter in self.list_filter:
+                if callable(list_filter):
+                    # This is simply a custom list filter class.
+                    spec = list_filter(request, lookup_params,
+                        self.model, self.model_admin)
+                else:
+                    field_path = None
+                    if isinstance(list_filter, (tuple, list)):
+                        # This is a custom FieldListFilter class for a given field.
+                        field, field_list_filter_class = list_filter
+                    else:
+                        # This is simply a field name, so use the default
+                        # FieldListFilter class that has been registered for
+                        # the type of the given field.
+                        field, field_list_filter_class = list_filter, FieldListFilter.create
+                    if not isinstance(field, models.Field):
+                        field_path = field
+                        field = get_fields_from_path(self.model, field_path)[-1]
+                    spec = field_list_filter_class(field, request, lookup_params,
+                        self.model, self.model_admin, field_path=field_path)
+                    # Check if we need to use distinct()
+                    use_distinct = (use_distinct or
+                                    lookup_needs_distinct(self.lookup_opts,
+                                                          field_path))
+                if spec and spec.has_output():
+                    filter_specs.append(spec)
+
+        # At this point, all the parameters used by the various ListFilters
+        # have been removed from lookup_params, which now only contains other
+        # parameters passed via the query string. We now loop through the
+        # remaining parameters both to ensure that all the parameters are valid
+        # fields and to determine if at least one of them needs distinct(). If
+        # the lookup parameters aren't real fields, then bail out.
+
+
+        for key, value in lookup_params.items():
+            lookup_params[key] = prepare_lookup_value(key, value)
+            try:
+                use_distinct = (use_distinct or lookup_needs_distinct(self.lookup_opts, key))
+            except FieldDoesNotExist, e:
+                lookup_params.pop(key)
+                # raise IncorrectLookupParameters(e)
+        return filter_specs, bool(filter_specs), lookup_params, use_distinct
+
+        # CustomFilter.objects.all().delete()
+        # return f
 
     def get_query_set(self, request):
 
@@ -92,7 +171,7 @@ class CustomFiltersAdmin(admin.ModelAdmin):
                     query.field = query_instance.parameter_name
                     query.save()
             else:
-                # if there're no pre-defined fields, adding first available field so filter set won't be empty
+                # if there are no pre-defined fields, adding first available field so filter set won't be empty
                 CustomQuery.objects.create(custom_filter=new_filter, field=new_filter.choices[0][0])
 
         # disabling right sidebar with filters by setting empty list_filter setting

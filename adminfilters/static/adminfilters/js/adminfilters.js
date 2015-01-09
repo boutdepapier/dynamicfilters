@@ -8,23 +8,23 @@ $(function() {
         }
         $('.add_adminfilters').change(function () {
         	var fname = $(this).val();
-            form.ajaxSubmit({'success': update_form});
+            form.ajaxSubmit({'success': update_form, url: form.data('save-action')});
         	$(this).find("option[value='"+fname+"']").remove();
         	$(this).find("option[value='']").attr('selected', true);
         });
         $('.load_adminfilters').click(function () {
-            form.ajaxSubmit({'success': save_form, 'dataType': 'json'});
+            form.ajaxSubmit({'success': save_form, 'dataType': 'json', url: form.data('save-action')});
         });
-        form.submit(function () {
-       		$('.add_adminfilters').val('');
-            $('.save_adminfilters').val(1);
-       		form.ajaxSubmit({'success': save_form, 'dataType': 'json'});
-        	return false;
-        });
+        //form.submit(function () {
+       		//$('.add_adminfilters').val('');
+           // $('.save_adminfilters').val(1);
+       		//form.ajaxSubmit({'success': save_form, 'dataType': 'json', url: form.data('save-action')});
+        	//return false;
+        //});
         $('input[name=save_button]').click(function () {
             $('.add_adminfilters').val('');
             $('.save_adminfilters').val(1);
-            form.ajaxSubmit({'success': save_form, 'dataType': 'json'});
+            form.ajaxSubmit({'success': save_form, 'dataType': 'json', url: form.data('save-action')});
         });
         $('input[name=add_button]').click(function () {
             location.href = add_filter_url;
