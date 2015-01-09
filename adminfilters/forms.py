@@ -21,6 +21,8 @@ class CustomFilterForm(forms.Form):
         self.model_admin = kwargs.pop('model_admin', None)
         self.new_query = kwargs.pop('new_query', None)
         super(CustomFilterForm, self).__init__(*args, **kwargs)
+        if type(self.data) == dict:
+            self.data = QueryDict(self.data)
         self.skip_validation = True
         self.params = args[0] if args else QueryDict('')
         all_fields = [f.replace('_enabled', '') for f in self.data if f.endswith('_enabled')]
@@ -69,7 +71,7 @@ class CustomFilterForm(forms.Form):
                                                                              required=False,
                                                                              widget=forms.Select(attrs={'class':'criteria'}))
                 self.field_rows.append(row)
-        
+
         for query in list(self.custom_filter.queries.all()) + self.new_fields:
             if not isinstance(query, CustomQuery):
                 query = CustomQuery(custom_filter=self.custom_filter, field=query)
@@ -205,4 +207,3 @@ class AddCustomFilterForm(CustomFilterForm):
         super(AddCustomFilterForm, self).__init__(*args, **kwargs)
         if not self.params.get(ADMINFILTERS_ADD_PARAM, None):
             self.skip_validation = False
-        
