@@ -26,6 +26,7 @@ ADMINFILTERS_CREATE_FILTERS = getattr(settings, 'ADMINFILTERS_CREATE_FILTERS', F
 
 class CustomChangeList(ChangeList):
     """Customized class for extending filters loading."""
+    current_filter = None
     
     def get_filters(self, request):
         if not request.session.get('use_new_filters'):
@@ -33,7 +34,7 @@ class CustomChangeList(ChangeList):
 
         new_filter, created = CustomFilter.objects.get_or_create(user=request.user, model_name=self.model.__name__, app_name=self.model._meta.app_label, default=True)
         form = CustomFilterForm(request.GET.copy(), custom_filter=new_filter)
-        if form.is_valid():
+        if len(request.GET) and form.is_valid():
             form.save()
 
         self.current_filter = CustomFilter.objects.filter(user=request.user, path_info=request.path_info, default=True)
@@ -98,7 +99,6 @@ class CustomChangeList(ChangeList):
         # remaining parameters both to ensure that all the parameters are valid
         # fields and to determine if at least one of them needs distinct(). If
         # the lookup parameters aren't real fields, then bail out.
-
 
         for key, value in lookup_params.items():
             lookup_params[key] = prepare_lookup_value(key, value)

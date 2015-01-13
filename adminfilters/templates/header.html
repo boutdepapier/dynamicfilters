@@ -20,7 +20,6 @@
 	<h2>{% trans 'Filters' %} ({{current_filter.verbose_name}}) <a href="javascript:void(null);" id="header_toggle">{% trans 'hide' %}</a></h2>
 	<div id="custom_filters_header">
         <form name="filters" method="get" action="." data-save-action="{{ save_filter_url }}">
-{#        <form name="filters" method="get" action="{{ save_filter_url }}">#}
             <div class="left_filters_container">
 
                 <div id="custom_filter_form">{% include 'custom_filter_form.html' %}</div>
@@ -35,14 +34,14 @@
                 {{form|get_field:load_param}}
             </div>
             <br clear="both"><br>
-{#            <input type="hidden" name="{{ save_param }}" value="" class="save_adminfilters">#}
-{#            <input type="button" name="save_button" value="{% trans 'Apply Filter' %}">#}
+            <input type="hidden" name="{{ save_param }}" value="" class="save_adminfilters">
+            <input type="button" name="save_button" value="{% trans 'Save Filter' %}">
             <input type="submit" value="{% trans 'Apply Filter' %}">
-{#            <input type="button" name="add_button" value="{% trans 'Add New Filter' %}">#}
-{#            <input type="button" name="clear_button" value="{% trans 'Clear Filter' %}">#}
+            <input type="button" name="add_button" value="{% trans 'Add New Filter' %}">
+            <input type="button" name="clear_button" value="{% trans 'Clear Filter' %}">
             <p class="deletelink-box inline-container">
                 <a href="{{delete_filter_url}}" class="deletelink deletefilter">{% trans 'Delete' %}</a>
             </p>
-		</form>
-	</div>
+        </form>
+    </div>
 </div>
