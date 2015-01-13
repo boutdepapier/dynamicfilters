@@ -158,7 +158,11 @@ class CustomFilter(models.Model):
                     if query.criteria.startswith('_not'):
                         key += '__%s' % query.criteria[4:]
                     elif query.criteria not in ['today', 'this_week', 'this_month', 'this_year', 'between', 'days_ago']:
-                        key += '__%s' % query.criteria
+                        if type(query.field_value) is list:
+                            key += '__in'
+                            query.field_value = ','.join(query.field_value)
+                        else:
+                            key += '__%s' % query.criteria
                     elif len(query.field_value) > 1 or query.criteria == 'days_ago':
                         key += '__in'
                     
@@ -190,7 +194,6 @@ class CustomFilter(models.Model):
                             filter_params[key] = query.field_value
         for query in self.bundled_queries.all():
             bundled_params[query.field] = query.value
-        # import ipdb; ipdb.set_trace()
         return filter_params, exclude_params, bundled_params
 
     @property
@@ -322,6 +325,7 @@ class CustomQuery(models.Model):
                 return 'date'
         return
 
+
 class CustomBundledQuery(models.Model):
     """Model which stores fields for SimpleListFilter"""
     
@@ -337,6 +341,7 @@ class CustomBundledQuery(models.Model):
         if module:
             return getattr(module, self.class_name, None)
         return
+
 
 @receiver(post_save, sender=CustomFilter)
 def filter_updater(sender, instance, **kwargs):

@@ -1,13 +1,17 @@
 from django import forms
 from django.conf import settings
-from django.contrib.admin import widgets  
+from django.contrib.admin import widgets
+from django.core.exceptions import ValidationError
+from django.forms.fields import DateTimeField
 from django.http import QueryDict
 from django.utils.translation import ugettext as _
-from models import CustomQuery
+
+from .models import CustomQuery
 
 ADMINFILTERS_ADD_PARAM = getattr(settings, 'ADMINFILTERS_ADD_PARAM', 'add_adminfilters')
 ADMINFILTERS_LOAD_PARAM = getattr(settings, 'ADMINFILTERS_LOAD_PARAM', 'load_adminfilters')
 ADMINFILTERS_SAVE_PARAM = getattr(settings, 'ADMINFILTERS_SAVE_PARAM', 'save_adminfilters')
+
 
 class CustomFilterForm(forms.Form):
     """Form for managing filter set."""
@@ -35,7 +39,7 @@ class CustomFilterForm(forms.Form):
             ordering_choices = self.custom_filter.ordering_choices
             ordering_field = forms.MultipleChoiceField(required=False)
         else:
-            widget = forms.Select(attrs={'class':'single_ordering'})
+            widget = forms.Select(attrs={'class': 'single_ordering'})
             ordering_choices = [('', '')] + self.custom_filter.ordering_choices
             ordering_field = forms.ChoiceField(widget=widget, required=False)
         self.fields['ordering'] = ordering_field
@@ -71,7 +75,6 @@ class CustomFilterForm(forms.Form):
                                                                              required=False,
                                                                              widget=forms.Select(attrs={'class':'criteria'}))
                 self.field_rows.append(row)
-
         for query in list(self.custom_filter.queries.all()) + self.new_fields:
             if not isinstance(query, CustomQuery):
                 query = CustomQuery(custom_filter=self.custom_filter, field=query)
@@ -88,7 +91,7 @@ class CustomFilterForm(forms.Form):
                                                                              required=False,
                                                                              widget=forms.Select(attrs={'class':'criteria'}))
                 if query.choices:
-                    attrs = {'class':'value'}
+                    attrs = {'class': 'value'}
                     if query.is_multiple or len(self.params.getlist('%s_value' % query.field, None)) > 1:
                         widget = forms.SelectMultiple(attrs=attrs)
                         value_field = forms.MultipleChoiceField(choices=query.choices,
@@ -101,10 +104,16 @@ class CustomFilterForm(forms.Form):
                                                     widget=widget)
                         
                 elif query.field_type in ['date', 'datetime']:
+
+                    field = DateTimeField()
+                    try:
+                        value = field.to_python(query.value)
+                    except ValidationError:
+                        value = field.to_python(query.value[:-7])
                     if query.field_type == 'date':
-                        value_field = forms.DateField(initial=query.value, widget=widgets.AdminDateWidget())
+                        value_field = forms.DateField(initial=value, widget=widgets.AdminDateWidget())
                     elif query.field_type == 'datetime':
-                        value_field = forms.DateTimeField(initial=query.value, widget=widgets.AdminSplitDateTime())
+                        value_field = forms.DateTimeField(initial=value, widget=widgets.AdminSplitDateTime())
                     dwidget = forms.TextInput(attrs={'style': 'display: %s' % ('block' if query.criteria == 'days_ago' else 'none'),
                                                      'size': 5})
                     dfield = forms.CharField(initial=query.value, 
@@ -133,9 +142,10 @@ class CustomFilterForm(forms.Form):
                         self.initial['%s_value' % query.field] = ''
                 self.field_rows.append(row)
 
-
     def save(self, *args, **kwargs):
         params = self.data
+        if params.get('e'):
+            return
         filter_ordering = params.getlist('ordering', None)
         if '' in filter_ordering:
             filter_ordering.remove('')
@@ -155,17 +165,21 @@ class CustomFilterForm(forms.Form):
             if params.get('%s_enabled' % query.field, None):
                 criteria = params.get('%s_criteria' % query.field, 'exact')
                 query.criteria = criteria
-                value = params.get('%s_value' % query.field, None)
+                value = params.getlist('%s_value' % query.field, None)
                 start = params.get('%s_start' % query.field, None)
                 end = params.get('%s_end' % query.field, None)
                 days_ago = params.get('%s_dago' % query.field, None)
+
                 if criteria == 'between':
                     query.is_multiple = True
                     query.field_value = [start, end]
                 elif criteria == 'days_ago':
                     query.field_value = days_ago
+                elif days_ago and not value:
+                    field = DateTimeField()
+                    query.field_value = field.to_python('%s %s' % (params.get('%s_value_0' % query.field, ''), params.get('%s_value_1' % query.field, '')))
                 else:
-                    query.is_multiple = True if isinstance(value, list) else False
+                    query.is_multiple = True if (isinstance(value, list) and len(value)) else False
                     query.field_value = value
                 query.save()
             else:
@@ -176,6 +190,7 @@ class CustomFilterForm(forms.Form):
         if self.skip_validation:
             self._errors = {}
         return super(CustomFilterForm, self).clean()
+
 
 class AddCustomFilterForm(CustomFilterForm):
     """Form for adding new filter only, not for managing."""

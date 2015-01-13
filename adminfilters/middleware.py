@@ -34,8 +34,11 @@ class CustomFiltersMiddleware(object):
                     custom_filters_loaded = False
                 if custom_filters_loaded:
                     custom_filters = CustomFilter.get_filters(user=request.user, path_info=request.path_info)
-                    form = CustomFilterForm(custom_filter=current_filter[0],
-                                            custom_filters=custom_filters)
+                    # we load last filter if there are no GET parameters
+                    if len(request.GET):
+                        form = CustomFilterForm(request.GET.copy(), custom_filter=current_filter[0], custom_filters=custom_filters)
+                    else:
+                        form = CustomFilterForm(custom_filter=current_filter[0], custom_filters=custom_filters)
                     opts = current_filter[0].model._meta
                     urlconf = getattr(request, 'urlconf', ADMINFILTERS_URLCONF)
                     delete_filter_url = reverse('admin:%s_%s_%s' % (opts.app_label, opts.module_name, 'delete_filter'), 
