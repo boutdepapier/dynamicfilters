@@ -164,7 +164,8 @@ class CustomFilter(models.Model):
                         else:
                             key += '__%s' % query.criteria
                     elif len(query.field_value) > 1 or query.criteria == 'days_ago':
-                        key += '__in'
+                        if query.criteria != 'between':
+                            key += '__in'
                     
                     # preparing date-related criteria
                     if query.criteria in ['today', 'this_week', 'this_month', 'this_year', 'days_ago']:
@@ -177,12 +178,13 @@ class CustomFilter(models.Model):
                         if query.criteria == 'this_year':
                             key += '__year'
                             value = date.strftime('%Y')
-                            filter_params[key] = value
+                        filter_params[key] = value
                         if query.criteria == 'days_ago':
                             filter_params[key] = datetime.date.today() + datetime.timedelta(days=int(query.field_value))
                     elif query.criteria == 'between':
-                        filter_params['%s__gt' % key] = query.field_value[0]
-                        filter_params['%s__lte' % key] = query.field_value[1]
+                        if all(query.field_value):
+                            filter_params['%s__gt' % key] = query.field_value[0]
+                            filter_params['%s__lte' % key] = query.field_value[1]
                     elif query.criteria.startswith('_not'):
                         exclude_params[key] = query.field_value
                     elif query.criteria == 'not':
@@ -209,6 +211,7 @@ class CustomFilter(models.Model):
             skipped_field_names = ['"%s"' % f for f in skipped_fields]
             return _(u'Fields: %s were skipped in current filterset. They might be renamed or deleted from original model.' % ','.join(skipped_field_names))
         return
+
 
 class CustomQuery(models.Model):
     """Model which stores fields and settings for every filter set."""
