@@ -1,10 +1,13 @@
+import re
+
 from django.conf import settings
 from django.contrib import messages
 from django.core.urlresolvers import reverse
 from django.shortcuts import redirect
 from django.template.loader import render_to_string
-from models import CustomFilter
-from forms import CustomFilterForm
+
+from .models import CustomFilter
+from .forms import CustomFilterForm
 
 ADMINFILTERS_ADD_PARAM = getattr(settings, 'ADMINFILTERS_ADD_PARAM', 'add_adminfilters')
 ADMINFILTERS_LOAD_PARAM = getattr(settings, 'ADMINFILTERS_LOAD_PARAM', 'load_adminfilters')
@@ -60,6 +63,13 @@ class CustomFiltersMiddleware(object):
                                                                'add_filter_url': add_filter_url,
                                                                'clear_filter_url': clear_filter_url})
                     response.content = response.content.replace(ADMINFILTERS_HEADER_TAG,  ADMINFILTERS_HEADER_TAG + content.encode('utf-8'))
+
+                    # this part replaces pagination links with corrected)
+                    pages = re.findall(r'<a href="\?save_adminfilters=.+>(\d+)</a>', response.content)
+                    links = re.findall(r'<a href="(\?save_adminfilters=.+)">\d+</a>', response.content)
+                    for index, link in enumerate(links):
+                        response.content = response.content.replace(link, '?' + request.META['QUERY_STRING'] + ('&p=%s' % (int(pages[index]) - 1)))
+
                     if current_filter[0].errors:
                         messages.warning(request, current_filter[0].errors)
         return response

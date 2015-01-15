@@ -78,6 +78,7 @@ class CustomFilterForm(forms.Form):
         for query in list(self.custom_filter.queries.all()) + self.new_fields:
             if not isinstance(query, CustomQuery):
                 query = CustomQuery(custom_filter=self.custom_filter, field=query)
+            field = DateTimeField()
             if query.model_field:
                 row = ['%s_enabled' % query.field,
                        '%s_criteria' % query.field]
@@ -104,12 +105,15 @@ class CustomFilterForm(forms.Form):
                                                     widget=widget)
                         
                 elif query.field_type in ['date', 'datetime']:
+                    if query.is_multiple:
+                        from datetime import datetime
+                        value = datetime.now()
+                    else:
 
-                    field = DateTimeField()
-                    try:
-                        value = field.to_python(query.value)
-                    except ValidationError:
-                        value = field.to_python(query.value[:-7])
+                        try:
+                            value = field.to_python(query.value)
+                        except ValidationError:
+                            value = field.to_python(query.value[:-7])
                     if query.field_type == 'date':
                         value_field = forms.DateField(initial=value, widget=widgets.AdminDateWidget())
                     elif query.field_type == 'datetime':
@@ -135,9 +139,10 @@ class CustomFilterForm(forms.Form):
                         row.append('%s_dago' % query.field)
                         self.fields['%s_dago' % query.field] = dfield
                     if query.criteria == 'between':
-                        bvalue = getattr(query, 'field_value', ['',''])
-                        self.initial['%s_start' % query.field] = bvalue[0]
-                        self.initial['%s_end' % query.field] = bvalue[1]
+                        default_value = ['', '']
+                        bvalue = getattr(query, 'field_value') or default_value
+                        self.initial['%s_start' % query.field] = field.to_python(bvalue[0]) if bvalue[0] else None
+                        self.initial['%s_end' % query.field] = field.to_python(bvalue[1]) if bvalue[1] else None
                         self.initial['%s_dago' % query.field] = ''
                         self.initial['%s_value' % query.field] = ''
                 self.field_rows.append(row)
@@ -166,17 +171,18 @@ class CustomFilterForm(forms.Form):
                 criteria = params.get('%s_criteria' % query.field, 'exact')
                 query.criteria = criteria
                 value = params.getlist('%s_value' % query.field, None)
-                start = params.get('%s_start' % query.field, None)
-                end = params.get('%s_end' % query.field, None)
                 days_ago = params.get('%s_dago' % query.field, None)
 
+                field = DateTimeField()
+
                 if criteria == 'between':
+                    start = field.to_python('%s %s' % (params.get('%s_start_0' % query.field, ''), params.get('%s_start_1' % query.field, '')))
+                    end = field.to_python('%s %s' % (params.get('%s_end_0' % query.field, ''), params.get('%s_end_1' % query.field, '')))
                     query.is_multiple = True
-                    query.field_value = [start, end]
+                    query.field_value = [str(start), str(end)]
                 elif criteria == 'days_ago':
                     query.field_value = days_ago
                 elif days_ago and not value:
-                    field = DateTimeField()
                     query.field_value = field.to_python('%s %s' % (params.get('%s_value_0' % query.field, ''), params.get('%s_value_1' % query.field, '')))
                 else:
                     query.is_multiple = True if (isinstance(value, list) and len(value)) else False
