@@ -155,32 +155,45 @@ class CustomFilter(models.Model):
             if query.model_field:
                 key = query.field
                 if query.criteria:  # avoiding load of empty criteria
+                    dates_criterias = ['today', 'this_week', 'this_month', 'this_year', 'between', 'days_ago']
                     if query.criteria.startswith('_not'):
                         key += '__%s' % query.criteria[4:]
-                    elif query.criteria not in ['today', 'this_week', 'this_month', 'this_year', 'between', 'days_ago']:
+                    elif query.criteria not in dates_criterias:
                         if type(query.field_value) is list:
                             key += '__in'
                             query.field_value = ','.join(query.field_value)
                         else:
                             key += '__%s' % query.criteria
-                    elif len(query.field_value) > 1 or query.criteria == 'days_ago':
+                    elif len(query.field_value) > 1 and query.criteria not in dates_criterias:
                         if query.criteria != 'between':
                             key += '__in'
                     
                     # preparing date-related criteria
                     if query.criteria in ['today', 'this_week', 'this_month', 'this_year', 'days_ago']:
                         date = datetime.datetime.now()
+                        value = None
                         if query.criteria == 'today':
                             value = date.strftime('%Y-%m-%d')
                         if query.criteria == 'this_month':
+                            # we need to filter by current year to make sure we have only from this month,
+                            # not all records with month with given number
+                            filter_params[key + '__year'] = date.strftime('%Y')
+
                             key += '__month'
                             value = date.strftime('%m')
-                        if query.criteria == 'this_year':
+                        if query.criteria == '__year':
                             key += '__year'
                             value = date.strftime('%Y')
-                        filter_params[key] = value
+
                         if query.criteria == 'days_ago':
                             filter_params[key] = datetime.date.today() + datetime.timedelta(days=int(query.field_value))
+                        if query.criteria == 'this_week':
+                            date = datetime.date.today()
+                            start_week = date - datetime.timedelta(date.weekday())
+                            end_week = start_week + datetime.timedelta(7)
+                            key += '__range'
+                            value = [start_week, end_week]
+                        filter_params[key] = value
                     elif query.criteria == 'between':
                         if all(query.field_value):
                             filter_params['%s__gt' % key] = query.field_value[0]

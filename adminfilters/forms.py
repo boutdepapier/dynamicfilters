@@ -187,6 +187,8 @@ class CustomFilterForm(forms.Form):
                     query.field_value = [str(start), str(end)]
                 elif criteria == 'days_ago':
                     query.field_value = days_ago
+                elif criteria == 'this_week':
+                    value = None
                 elif days_ago and not value:
                     query.field_value = field.to_python('%s %s' % (params.get('%s_value_0' % query.field, ''), params.get('%s_value_1' % query.field, '')))
                 else:
