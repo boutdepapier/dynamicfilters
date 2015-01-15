@@ -171,6 +171,11 @@ class CustomFilterForm(forms.Form):
                 criteria = params.get('%s_criteria' % query.field, 'exact')
                 query.criteria = criteria
                 value = params.getlist('%s_value' % query.field, None)
+
+                # some sort of hack to detect if we have multiple values
+                if not query.is_multiple and not len(value):
+                    value = params.get('%s_value' % query.field, None)
+
                 days_ago = params.get('%s_dago' % query.field, None)
 
                 field = DateTimeField()
@@ -182,6 +187,8 @@ class CustomFilterForm(forms.Form):
                     query.field_value = [str(start), str(end)]
                 elif criteria == 'days_ago':
                     query.field_value = days_ago
+                elif criteria == 'this_week':
+                    value = None
                 elif days_ago and not value:
                     query.field_value = field.to_python('%s %s' % (params.get('%s_value_0' % query.field, ''), params.get('%s_value_1' % query.field, '')))
                 else:
