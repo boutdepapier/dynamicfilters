@@ -43,7 +43,7 @@ class CustomChangeList(ChangeList):
         if self.current_filter:
             filter_params, self.exclude_params, self.bundled_params = self.current_filter[0].get_filter_params()
             self.params.update(**filter_params)
-        # f = super(CustomChangeList, self).get_filters(request)
+
         lookup_params = self.params.copy() # a dictionary of the query string
         use_distinct = False
 
