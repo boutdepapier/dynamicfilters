@@ -70,6 +70,10 @@ class CustomFiltersMiddleware(object):
                     for index, link in enumerate(links):
                         response.content = response.content.replace(link, '?' + request.META['QUERY_STRING'] + ('&p=%s' % (int(pages[index]) - 1)))
 
+                    # this part replaces sorting links
+                    for link, sorting_criteria in re.findall(r'\<a href="\?(.*\&?o=([\.\-0-9]*)\w*)"\>', response.content):
+                        response.content = response.content.replace(link, request.META['QUERY_STRING'] + '&o=%s' % sorting_criteria)
+
                     if current_filter[0].errors:
                         messages.warning(request, current_filter[0].errors)
         return response
