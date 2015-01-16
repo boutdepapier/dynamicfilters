@@ -164,7 +164,7 @@ class CustomFilter(models.Model):
                             query.field_value = ','.join(query.field_value)
                         else:
                             key += '__%s' % query.criteria
-                    elif len(query.field_value) > 1 and query.criteria not in dates_criterias:
+                    elif type(query.field_value) is list and len(query.field_value) > 1 and query.criteria not in dates_criterias:
                         if query.criteria != 'between':
                             key += '__in'
                     
