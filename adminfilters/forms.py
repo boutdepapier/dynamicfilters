@@ -181,15 +181,21 @@ class CustomFilterForm(forms.Form):
                 field = DateTimeField()
 
                 if criteria == 'between':
-                    start = field.to_python('%s %s' % (params.get('%s_start_0' % query.field, ''), params.get('%s_start_1' % query.field, '')))
-                    end = field.to_python('%s %s' % (params.get('%s_end_0' % query.field, ''), params.get('%s_end_1' % query.field, '')))
+                    if query.field_type == 'date':
+                        start = params.get('%s_start' % query.field, '')
+                        end = params.get('%s_end' % query.field, '')
+                    else:
+                        start = field.to_python('%s %s' % (params.get('%s_start_0' % query.field, ''), params.get('%s_start_1' % query.field, '')))
+                        end = field.to_python('%s %s' % (params.get('%s_end_0' % query.field, ''), params.get('%s_end_1' % query.field, '')))
                     query.is_multiple = True
                     query.field_value = [str(start), str(end)]
                 elif criteria == 'days_ago':
                     query.field_value = days_ago
                 elif criteria == 'this_week':
                     value = None
-                elif days_ago and not value:
+                elif days_ago and not value and criteria not in ['this_year']:
+                    query.field_value = field.to_python('%s %s' % (params.get('%s_value_0' % query.field, ''), params.get('%s_value_1' % query.field, '')))
+                elif query.field_type == 'datetime' and criteria == 'exact':
                     query.field_value = field.to_python('%s %s' % (params.get('%s_value_0' % query.field, ''), params.get('%s_value_1' % query.field, '')))
                 else:
                     query.is_multiple = True if (isinstance(value, list) and len(value)) else False
