@@ -29,7 +29,7 @@ INTEGER_FIELD_CHOICES = (
 )
 
 CHAR_FIELD_CHOICES = (
-    ('contains', _(u'contains')), 
+    ('icontains', _(u'contains')),
     ('_notcontains', _(u'doesn\'t contain')), 
     ('startswith', _(u'starts with')),
     ('endswith', _(u'ends with'))
@@ -221,8 +221,6 @@ class CustomFilter(models.Model):
                         filter_params[key + '__startswith'] = query.field_value
                     elif query.criteria == 'endswith':
                         filter_params[key + '__endswith'] = query.field_value
-                    elif query.criteria == 'contains':
-                        filter_params[key + '__icontains'] = query.field_value
 
                     elif query.field_value:     # avoiding load of empty filter value which causes database error
                         if query.model_field.get_internal_type() == 'BooleanField':
@@ -245,7 +243,6 @@ class CustomFilter(models.Model):
 
         for query in self.bundled_queries.all():
             bundled_params[query.field] = query.value
-        print (filter_params, exclude_params, bundled_params)
         return filter_params, exclude_params, bundled_params
 
     @property
