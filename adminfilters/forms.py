@@ -189,6 +189,9 @@ class CustomFilterForm(forms.Form):
                         end = field.to_python('%s %s' % (params.get('%s_end_0' % query.field, ''), params.get('%s_end_1' % query.field, '')))
                     query.is_multiple = True
                     query.field_value = [str(start), str(end)]
+                elif criteria in ('lt', 'gt') and query.field_type in ('date', 'datetime'):
+                    start = field.to_python('%s %s' % (params.get('%s_value_0' % query.field, ''), params.get('%s_value_1' % query.field, '')))
+                    query.field_value = str(start)
                 elif criteria == 'days_ago':
                     query.field_value = days_ago
                 elif criteria == 'this_week':
@@ -198,8 +201,13 @@ class CustomFilterForm(forms.Form):
                 elif query.field_type == 'datetime' and criteria == 'exact':
                     query.field_value = field.to_python('%s %s' % (params.get('%s_value_0' % query.field, ''), params.get('%s_value_1' % query.field, '')))
                 else:
-                    query.is_multiple = True if (isinstance(value, list) and len(value)) else False
+                    query.is_multiple = True if (isinstance(value, list) and len(value) > 1) else False
                     query.field_value = value
+
+                # some sort of hack to detect if we have multiple values
+                if not query.is_multiple and isinstance(value, list) and len(value) == 1:
+                    query.value = value[0]
+
                 query.save()
             else:
                 query.delete()
