@@ -160,9 +160,7 @@ class CustomFilter(models.Model):
                 key = query.field
                 if query.criteria:  # avoiding load of empty criteria
                     dates_criterias = ['today', 'this_week', 'this_month', 'this_year', 'between', 'days_ago']
-                    if query.criteria.startswith('_not'):
-                        key += '__%s' % query.criteria[4:]
-                    elif query.criteria not in dates_criterias:
+                    if query.criteria not in dates_criterias:
                         if type(query.field_value) is list:
                             if len(query.field_value) > 1:
                                 key += '__in'
@@ -175,7 +173,6 @@ class CustomFilter(models.Model):
                     elif type(query.field_value) is list and len(query.field_value) > 1 and query.criteria not in dates_criterias:
                         if query.criteria != 'between':
                             key += '__in'
-
                     # preparing date-related criteria
                     if query.criteria in ['today', 'this_week', 'this_month', 'this_year', 'days_ago']:
                         date = datetime.datetime.now()
@@ -189,7 +186,7 @@ class CustomFilter(models.Model):
 
                             key += '__month'
                             value = date.strftime('%m')
-                        if query.criteria == '__year':
+                        if query.criteria == 'this_year':
                             key += '__year'
                             value = date.strftime('%Y')
 
@@ -201,7 +198,11 @@ class CustomFilter(models.Model):
                             value = [start_week, end_week]
                         filter_params[key] = value
                         if query.criteria == 'days_ago':
-                            filter_params[key] = datetime.date.today() + datetime.timedelta(days=int(query.field_value))
+                            date = datetime.date.today() - datetime.timedelta(days=int(query.field_value))
+                            del(filter_params[key])
+                            filter_params[key + '__year'] = date.year
+                            filter_params[key + '__month'] = date.month
+                            filter_params[key + '__day'] = date.day
                     elif query.criteria == 'between':
                         start_value = query.field_value[0]
                         end_value = query.field_value[0]
@@ -212,20 +213,28 @@ class CustomFilter(models.Model):
                             filter_params['%s__gt' % key] = start_value
                         if query.field_value[1]:
                             filter_params['%s__lte' % key] = end_value
-                    elif query.criteria.startswith('_not'):
-                        exclude_params[key] = query.field_value
+                    elif query.criteria == '_notcontains':
+                        exclude_params[key + '__icontains'] = query.field_value
                     elif query.criteria == 'not':
                         exclude_params[key[:-5]] = query.field_value
+                    elif query.criteria == 'startswith':
+                        filter_params[key + '__startswith'] = query.field_value
+                    elif query.criteria == 'endswith':
+                        filter_params[key + '__endswith'] = query.field_value
+                    elif query.criteria == 'contains':
+                        filter_params[key + '__icontains'] = query.field_value
+
                     elif query.field_value:     # avoiding load of empty filter value which causes database error
                         if query.model_field.get_internal_type() == 'BooleanField':
                             filter_params[key] = {'true': True, 'false': False}[query.field_value]
                         else:
                             if query.criteria in ('lt', 'gt'):
-                                filter_params[key + '__' + query.criteria] = query.field_value
+                                if not key.endswith('__' + query.criteria):
+                                    key = key + '__' + query.criteria
+                                filter_params[key] = query.field_value
                             else:
                                 filter_params[key] = query.field_value
-                            if query.field_type in ('date', 'datetime') and query.field_value:
-
+                            if query.field_type in ('date', 'datetime') and query.field_value and query.criteria not in ('lt', 'gt'):
                                 date = field.to_python(query.field_value)
                                 # needed to cover case when field is datetime and time is not specified
                                 if not date.hour and not date.minute and not date.second:
@@ -236,6 +245,7 @@ class CustomFilter(models.Model):
 
         for query in self.bundled_queries.all():
             bundled_params[query.field] = query.value
+        print (filter_params, exclude_params, bundled_params)
         return filter_params, exclude_params, bundled_params
 
     @property
@@ -277,6 +287,8 @@ class CustomQuery(models.Model):
         if not self.is_multiple:
             self.value = value
         else:
+            if type(value) == datetime.datetime:
+                value = str(value)
             self.value = simplejson.dumps(value)
     
     # Property used for supporting multiple values assignment, provided in lists and dictionaries.
