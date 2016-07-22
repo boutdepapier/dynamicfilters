@@ -27,7 +27,7 @@ ADMINFILTERS_CREATE_FILTERS = getattr(settings, 'ADMINFILTERS_CREATE_FILTERS', F
 class CustomChangeList(ChangeList):
     """Customized class for extending filters loading."""
     current_filter = None
-    
+
     def get_filters(self, request):
         if not request.session.get('use_new_filters'):
             return super(CustomChangeList, self).get_filters(request)
@@ -38,7 +38,7 @@ class CustomChangeList(ChangeList):
             form.save()
 
         self.current_filter = CustomFilter.objects.filter(user=request.user, path_info=request.path_info, default=True)
-        
+
         # loading filter set params into change list, so they will be applied in queryset
         if self.current_filter:
             filter_params, self.exclude_params, self.bundled_params = self.current_filter[0].get_filter_params()
@@ -142,21 +142,21 @@ class CustomFiltersAdmin(admin.ModelAdmin):
               '/static/adminfilters/js/jquery.cookie.js',
               '/static/adminfilters/js/jquery.form.js',
               '/static/adminfilters/js/adminfilters.js')
-        
+
         css = {
                'all': ('/static/adminfilters/css/adminfilters.css',)
         }
-    
+
     def changelist_view(self, request, *args, **kwargs):
         if not request.session.get('use_new_filters'):
             return super(CustomFiltersAdmin, self).changelist_view(request, *args, **kwargs)
 
         if not getattr(self, 'default_list_filter', None):
             self.default_list_filter = self.list_filter
-        
+
         # Checking if default filter set was created for current application and model, for current user.
         # Otherwise, creating one. Eventually, there's at least one set of filters for application model per each user.
-        new_filter, created = CustomFilter.objects.get_or_create(user=request.user, model_name=self.model.__name__, 
+        new_filter, created = CustomFilter.objects.get_or_create(user=request.user, model_name=self.model.__name__,
                                                                  app_name=self.model._meta.app_label, default=True)
         # once custom filter set has been created, adding fields from list_filter setting to current filter set
         if ADMINFILTERS_CREATE_FILTERS and created:
@@ -184,7 +184,7 @@ class CustomFiltersAdmin(admin.ModelAdmin):
 
     def lookup_allowed(self, *args, **kwargs):
         return True
-    
+
     def get_changelist(self, request, **kwargs):
         use_new_filters = request.GET.get('use_new_filters')
         if use_new_filters:
@@ -200,16 +200,16 @@ class CustomFiltersAdmin(admin.ModelAdmin):
 
         """Extending change list class for loading custom filters."""
         return CustomChangeList
-    
+
     def add_new_filter(self, request):
         """
         Controller for adding new filter set.
         On successful save, user will be redirected back to changelist controller.
         """
-        
+
         # creating temporary filter set, it's available to attach field until it's saved
-        current_filter, created = CustomFilter.objects.get_or_create(user=request.user, app_name=self.opts.app_label, 
-                                                                     model_name=self.model.__name__, 
+        current_filter, created = CustomFilter.objects.get_or_create(user=request.user, app_name=self.opts.app_label,
+                                                                     model_name=self.model.__name__,
                                                                      default=False, name='temporary')
         form = AddCustomFilterForm(custom_filter=current_filter)
         if request.method == 'POST':
@@ -221,8 +221,8 @@ class CustomFiltersAdmin(admin.ModelAdmin):
             elif form.is_valid():
                 form.save()
                 if '_addanother' not in request.POST:
-                    return redirect(urlresolvers.reverse('admin:%s_%s_changelist' % (self.opts.app_label, self.opts.module_name)))
-                
+                    return redirect(urlresolvers.reverse('admin:%s_%s_changelist' % (self.opts.app_label, self.opts.model_name)))
+
                 # clearing form if user wants to add one more filter set
                 form = AddCustomFilterForm(custom_filter=current_filter)
 
@@ -241,10 +241,10 @@ class CustomFiltersAdmin(admin.ModelAdmin):
                    'form': form,
                    'add_param': ADMINFILTERS_ADD_PARAM}
         return render_to_response('admin_filter_edit.html', context, context_instance=RequestContext(request))
-    
+
     def save_filter(self, request):
         """
-        Dedicated controller for saving filter set and its settings. 
+        Dedicated controller for saving filter set and its settings.
         """
         new_query = request.GET.get(ADMINFILTERS_ADD_PARAM, None)
         load_preset = request.GET.get(ADMINFILTERS_LOAD_PARAM, None)
@@ -252,11 +252,11 @@ class CustomFiltersAdmin(admin.ModelAdmin):
         data = {'success': True}
 
         if load_preset:
-            CustomFilter.objects.filter(user=request.user, model_name=self.model.__name__, 
+            CustomFilter.objects.filter(user=request.user, model_name=self.model.__name__,
                                         app_name=self.model._meta.app_label).update(default=False)
             CustomFilter.objects.filter(id=load_preset).update(default=True)
-        
-        new_filter = CustomFilter.objects.get(user=request.user, model_name=self.model.__name__, 
+
+        new_filter = CustomFilter.objects.get(user=request.user, model_name=self.model.__name__,
                                               app_name=self.model._meta.app_label, default=True)
         if new_query:
             form = CustomFilterForm(request.GET.copy(), custom_filter=new_filter, new_query=new_query)
@@ -267,35 +267,35 @@ class CustomFiltersAdmin(admin.ModelAdmin):
             if form.is_valid():
                 form.save()
             else:
-                response = render_to_response('custom_filter_form.html', {'form': form}, 
+                response = render_to_response('custom_filter_form.html', {'form': form},
                                               context_instance=RequestContext(request))
                 data.update(response=response, success=False)
         return HttpResponse(json.dumps(data), content_type='application/json')
-    
+
     def delete_filter(self, request, filter_id):
         """Deleting custom filter and redirecting back to change list. User allowed to delete own filters only."""
-        
+
         custom_filter = get_object_or_404(CustomFilter, id=filter_id, user=request.user)
         custom_filter.delete()
         return redirect(urlresolvers.reverse('admin:%s_%s_changelist' % (self.opts.app_label, self.opts.module_name)))
-    
+
     def clear_filter(self, request):
-        current_filter = CustomFilter.objects.filter(user=request.user, model_name=self.model.__name__, 
+        current_filter = CustomFilter.objects.filter(user=request.user, model_name=self.model.__name__,
                                                      app_name=self.model._meta.app_label, default=True)
         if current_filter:
             current_filter[0].delete()
         return redirect(urlresolvers.reverse('admin:%s_%s_changelist' % (self.opts.app_label, self.opts.module_name)))
-    
+
     def get_urls(self):
         """Extending current ModelAdmin's urlconf."""
-        
+
         urls = super(CustomFiltersAdmin, self).get_urls()
-        options = (self.opts.app_label, self.opts.module_name)
+        options = (self.opts.app_label, self.opts.model_name)
         custom_urls = patterns('',
             url(r'^add_filter/$', self.add_new_filter, name='%s_%s_add_filter' % options),
             url(r'^save_filter/$', self.save_filter, name='%s_%s_save_filter' % options),
             url(r'^delete_filter/(\d+)/$', self.delete_filter, name='%s_%s_delete_filter' % options),
             url(r'^clear_filter/$', self.clear_filter, name='%s_%s_clear_filter' % options),
         )
-        
+
         return custom_urls + urls
