@@ -277,14 +277,14 @@ class CustomFiltersAdmin(admin.ModelAdmin):
 
         custom_filter = get_object_or_404(CustomFilter, id=filter_id, user=request.user)
         custom_filter.delete()
-        return redirect(urlresolvers.reverse('admin:%s_%s_changelist' % (self.opts.app_label, self.opts.module_name)))
+        return redirect(urlresolvers.reverse('admin:%s_%s_changelist' % (self.opts.app_label, self.opts.model_name)))
 
     def clear_filter(self, request):
         current_filter = CustomFilter.objects.filter(user=request.user, model_name=self.model.__name__,
                                                      app_name=self.model._meta.app_label, default=True)
         if current_filter:
             current_filter[0].delete()
-        return redirect(urlresolvers.reverse('admin:%s_%s_changelist' % (self.opts.app_label, self.opts.module_name)))
+        return redirect(urlresolvers.reverse('admin:%s_%s_changelist' % (self.opts.app_label, self.opts.model_name)))
 
     def get_urls(self):
         """Extending current ModelAdmin's urlconf."""
